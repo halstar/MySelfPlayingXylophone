@@ -1,0 +1,14 @@
+{
+    "START_CONSOLE"           : 1,
+    "LOG_LEVEL"               : 4,
+    "MIDI_MUSIC_DIR"          : "MUSIC",
+
+    "I2C_BUS_NUMBER"          :  1,
+    "SPI_BUS_NUMBER"          :  0,
+    "MCP_23017_I2C_ADDRESS_1" : 32,
+    "MCP_23017_I2C_ADDRESS_2" : 34,
+    "E_INK_SPI_ADDRESS"       :  0,
+
+    "XYLOPHONE_LOWEST_NOTE"   : 41,
+    "XYLOPHONE_NOTES_COUNT"   : 32
+}
