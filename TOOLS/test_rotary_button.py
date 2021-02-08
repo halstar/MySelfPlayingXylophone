@@ -197,6 +197,16 @@ def main():
         time.sleep(0.01)
 
 
+def graceful_exit(return_code):
+
+    # Cleanup GPIOs if button is created with USE_RPI_GPIO
+    # RPi.GPIO.cleanup()
+
+    os._exit(return_code)
+
+    return
+
+
 if __name__ == '__main__':
 
     try:
@@ -212,15 +222,13 @@ if __name__ == '__main__':
 
         input_thread.join()
 
-        # Cleanup GPIOs if button is created with USE_RPI_GPIO
-        # RPi.GPIO.cleanup()
-
-        os._exit(main_status)
+        graceful_exit(main_status)
 
     except KeyboardInterrupt:
         log(ERROR, 'Keyboard interrupt...')
-        os._exit(1)
+        graceful_exit(1)
 
     except Exception as error:
         log(ERROR, 'Error: ' + str(error))
-        os._exit(2)
+        graceful_exit(2)
+

@@ -22,7 +22,10 @@ class IoExtender:
     IOS_COUNT = 16
 
     def __init__(self, bus, address):
-        
+
+        self.bus     = bus
+        self.address = address
+
         self.i2c_device = i2c.I2cDevice(bus, address)
 
         log(INFO, 'Setup IO extender #{}:{}'.format(bus, address))
@@ -55,9 +58,9 @@ class IoExtender:
 
     def write_io(self, pin, value):
 
-        log(DEBUG, 'Setting IO #{}@{}'.format(pin, value))
+        log(DEBUG, 'Writing IO #{}@{}'.format(pin, value))
 
-        if not 0 <= pin < IoExtender.IOS_COUNT - 1:
+        if not 0 <= pin <= IoExtender.IOS_COUNT - 1:
 
             log(ERROR, 'Cannot write IO; out of range pin: {}'.format(pin))
             return
@@ -78,27 +81,27 @@ class IoExtender:
 
     def write_ios(self, pins_values):
 
-        log(DEBUG, 'Setting IOs: {}'.format(pins_values))
+        log(DEBUG, 'Writing IOs: {}'.format(pins_values))
 
         for pin_value in pins_values:
 
-            if not 0 <= pin_value['pin'] < IoExtender.IOS_COUNT - 1:
+            if not 0 <= pin_value['pin'] <= IoExtender.IOS_COUNT - 1:
 
                 log(ERROR, 'Cannot write IOS; out of range pin: {}'.format(pin_value['pin']))
                 return
 
         port_a_values = self.port_a_values
-        port_b_values = self.port_a_values
+        port_b_values = self.port_b_values
 
         for pin_value in pins_values:
 
             if pin_value['pin'] < 8:
 
-                port_a_values = self.__change_bit__(self.port_a_values, pin_value['pin'], pin_value['value'])
+                port_a_values = self.__change_bit__(port_a_values, pin_value['pin'], pin_value['value'])
 
             else:
 
-                port_b_values = self.__change_bit__(self.port_b_values, pin_value['pin'] - 8, pin_value['value'])
+                port_b_values = self.__change_bit__(port_b_values, pin_value['pin'] - 8, pin_value['value'])
 
         if port_a_values != self.port_a_values:
 
@@ -109,5 +112,15 @@ class IoExtender:
 
             self.i2c_device.write_byte(IoExtender.MCP_23017_OLATB, port_b_values)
             self.port_b_values = port_b_values
+
+        return
+
+    def shutdown(self):
+
+        log(INFO, 'Shutting down IO extender #{}:{}'.format(self.bus, self.address))
+
+        # Turn off all output
+        self.i2c_device.write_byte(IoExtender.MCP_23017_OLATA, 0x00)
+        self.i2c_device.write_byte(IoExtender.MCP_23017_OLATB, 0x00)
 
         return

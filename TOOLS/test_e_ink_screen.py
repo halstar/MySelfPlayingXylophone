@@ -5,7 +5,7 @@ import threading
 
 sys.path.append("..")
 
-import ioextender
+import einkscreen
 
 from optparse import OptionParser
 from log      import *
@@ -14,8 +14,8 @@ VERSION          = '1.0'
 UPDATE_DATE      = '2021-02-03'
 VERSION_STRING   = '%%prog v%s (%s)' % (VERSION, UPDATE_DATE)
 USAGE            = 'usage: %prog [-h] [--verbose=INT] --input-pin-1=INT --input-pin-2=INT --input-pin-press=INT'
-LONG_DESCRIPTION = 'This program makes possible to easily test the IO extender class.\n' \
-                   'This refers to MCP 23017 chip. Verbose level is between 0 (lowest) & 4.'
+LONG_DESCRIPTION = 'This program makes possible to easily test the E-ink screnn class. ' \
+                   'Verbose level is between 0 (lowest) & 4.'
 
 # Default log level
 DEFAULT_LOG_LEVEL = DEBUG
@@ -152,9 +152,9 @@ def main():
     # Options are OK: process with the test
     os.system('clear')
 
-    log(INFO, '*****************************************')
-    log(INFO, '* Starting IO Extender Class testing... *')
-    log(INFO, '*****************************************')
+    log(INFO, '***********************************')
+    log(INFO, '* Starting E-Ink Class testing... *')
+    log(INFO, '***********************************')
     log(INFO, '')
     log(INFO, 'Type "{}" to quit test'.format(QUIT_COMMAND))
     log(INFO, '')
@@ -192,9 +192,9 @@ def main():
 
             log(INFO, 'Exiting!')
             log(INFO, '')
-            log(INFO, '******************************************')
-            log(INFO, '* Done with IO Extender Class testing... *')
-            log(INFO, '******************************************')
+            log(INFO, '************************************')
+            log(INFO, '* Done with E-Ink Class testing... *')
+            log(INFO, '************************************')
 
             return 0
 
@@ -202,6 +202,18 @@ def main():
 
             log(WARNING, 'Unsupported command: "{}"'.format(user_input_string))
             last_command = user_input_string
+
+
+def graceful_exit(return_code):
+
+    global io_extender
+
+    if io_extender:
+        io_extender.shutdown()
+
+    os._exit(return_code)
+
+    return
 
 
 if __name__ == '__main__':
@@ -219,12 +231,12 @@ if __name__ == '__main__':
 
         input_thread.join()
 
-        os._exit(main_status)
+        graceful_exit(main_status)
 
     except KeyboardInterrupt:
         log(ERROR, 'Keyboard interrupt...')
-        os._exit(1)
+        graceful_exit(1)
 
     except Exception as error:
         log(ERROR, 'Error: ' + str(error))
-        os._exit(2)
+        graceful_exit(2)

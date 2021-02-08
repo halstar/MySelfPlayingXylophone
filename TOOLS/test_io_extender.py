@@ -13,8 +13,8 @@ from log      import *
 VERSION          = '1.0'
 UPDATE_DATE      = '2021-02-03'
 VERSION_STRING   = '%%prog v%s (%s)' % (VERSION, UPDATE_DATE)
-USAGE            = 'usage: %prog [-h] [--verbose=INT] --input-pin-1=INT --input-pin-2=INT --input-pin-press=INT'
-LONG_DESCRIPTION = 'This program makes possible to easily test the IO extender class.\n' \
+USAGE            = 'usage: %prog [-h] [--verbose=INT] --i2c-address=INT --primary-io-pin=INT --secondary-io-pin=INT --low-level-duration=INT --high-level-duration=INT'
+LONG_DESCRIPTION = 'This program makes possible to easily test the IO extender class. ' \
                    'This refers to MCP 23017 chip. Verbose level is between 0 (lowest) & 4.'
 
 # Default log level
@@ -33,7 +33,7 @@ I2C_BUS_NUMBER = 1
 # Global variables
 user_input_string = EMPTY_COMMAND
 quit_input_thread = False
-
+io_extender       = None
 
 def user_input_thread():
 
@@ -54,6 +54,7 @@ def user_input_thread():
 def main():
 
     global user_input_string
+    global io_extender
 
     # Get input options
     argv = sys.argv[1:]
@@ -208,6 +209,18 @@ def main():
             last_command = user_input_string
 
 
+def graceful_exit(return_code):
+
+    global io_extender
+
+    if io_extender:
+        io_extender.shutdown()
+
+    os._exit(return_code)
+
+    return
+
+
 if __name__ == '__main__':
 
     try:
@@ -223,12 +236,12 @@ if __name__ == '__main__':
 
         input_thread.join()
 
-        os._exit(main_status)
+        graceful_exit(main_status)
 
     except KeyboardInterrupt:
         log(ERROR, 'Keyboard interrupt...')
-        os._exit(1)
+        graceful_exit(1)
 
     except Exception as error:
         log(ERROR, 'Error: ' + str(error))
-        os._exit(2)
+        graceful_exit(2)

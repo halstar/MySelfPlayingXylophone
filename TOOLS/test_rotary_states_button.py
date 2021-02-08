@@ -19,7 +19,7 @@ VERSION          = '1.0'
 UPDATE_DATE      = '2021-01-28'
 VERSION_STRING   = '%%prog v%s (%s)' % (VERSION, UPDATE_DATE)
 USAGE            = 'usage: %prog [-h] [--verbose=INT] --input-pin-1=INT --input-pin-2=INT --input-pin-press=INT'
-LONG_DESCRIPTION = 'This program makes possible to easily test a KY-40 rotary encoder with Python.\n' \
+LONG_DESCRIPTION = 'This program makes possible to easily test a KY-40 rotary encoder with Python. ' \
                    'Pin numbers refers to BCM numbering. Verbose level is between 0 (lowest) & 4.'
 
 # Default log level
@@ -192,6 +192,16 @@ def main():
         time.sleep(0.01)
 
 
+def graceful_exit(return_code):
+
+    # Cleanup GPIOs if button is created with USE_RPI_GPIO
+    # RPi.GPIO.cleanup()
+
+    os._exit(return_code)
+
+    return
+
+
 if __name__ == '__main__':
 
     try:
@@ -207,15 +217,12 @@ if __name__ == '__main__':
 
         input_thread.join()
 
-        # Cleanup GPIOs if button is created with USE_RPI_GPIO
-        # RPi.GPIO.cleanup()
-
-        os._exit(main_status)
+        graceful_exit(main_status)
 
     except KeyboardInterrupt:
         log(ERROR, 'Keyboard interrupt...')
-        os._exit(1)
+        graceful_exit(1)
 
     except Exception as error:
         log(ERROR, 'Error: ' + str(error))
-        os._exit(2)
+        graceful_exit(2)
