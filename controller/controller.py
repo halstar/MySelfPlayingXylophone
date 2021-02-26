@@ -12,7 +12,7 @@ class Controller:
     STATE_PLAYING_TRACK  = 1
     STATE_STOPPING_TRACK = 2
 
-    def __init__(self, mode_button, track_button, tempo_button, midi_reader, xylophone, eink_screen):
+    def __init__(self, mode_button, track_button, tempo_button, midi_reader, xylophone, display):
 
         log(INFO, 'Setting up Controller')
 
@@ -21,7 +21,7 @@ class Controller:
         self.tempo_button = tempo_button
         self.xylophone    = xylophone
         self.midi_reader  = midi_reader
-        self.eink_screen  = eink_screen
+        self.display      = display
 
         self.mode        = DEFAULT_MODE
         self.track_index = DEFAULT_TRACK
@@ -63,25 +63,25 @@ class Controller:
 
     def buttons_reader_thread(self):
 
+        log(INFO, 'Starting Controller\'s buttons reader thread')
+
         while True:
 
             # Deal with all 3 buttons position
+            self.mode        = self.mode_button.get_state ()
+            self.track_index = self.track_button.get_value() % self.tracks_count
+            self.track_tempo = self.tempo_button.get_state()
 
-            if self.mode_button.get_move() != rotarybutton.RotaryButton.DID_NOT_TURN:
-
-                self.mode = self.mode_button.get_state()
-
-            if self.track_button.get_move() != rotarybutton.RotaryButton.DID_NOT_TURN:
-
-                self.track_index = self.track_button.get_value() % self.tracks_count
-
-            if self.tempo_button.get_move() != rotarybutton.RotaryButton.DID_NOT_TURN:
-
-                self.track_tempo = self.tempo_button.get_state()
+            # Possibly update screen with possible new preset mode/track/tempo
+            self.display.preset_mode (self.mode       )
+            self.display.preset_track(self.track_index)
+            self.display.preset_tempo(self.track_tempo)
 
             # Deal with all 3 buttons click status
 
             if self.mode_button.was_clicked() == True:
+
+                self.display.set_mode(self.mode)
 
                 # Possibly stop current track reading
                 if self.state == self.STATE_PLAYING_TRACK:
@@ -99,25 +99,23 @@ class Controller:
                     self.play_track()
 
             if self.track_button.was_clicked() == True:
-                
+
+                self.display.set_track(self.track_index)
+
                 # Possibly stop current track reading 
                 if self.state == self.STATE_PLAYING_TRACK:
                     self.stop_track()
 
                 # Force mode change to just play that file
                 self.mode = MODE.PLAY_ONE_TRACK
+                self.mode_button.set_state(self.mode)
 
                 # Now start (or restart) selected track reading
                 self.play_track()
 
             if self.tempo_button.was_clicked() == True:
 
-                pass
-
-            # Update screen with possible new mode/track/tempo
-            self.eink_screen.set_mode (self.mode       )
-            self.eink_screen.set_track(self.track_index)
-            self.eink_screen.set_tempo(self.track_tempo)
+                self.display.set_tempo(self.track_tempo)
 
             time.sleep(MAIN_LOOP_SLEEP_TIME)
 

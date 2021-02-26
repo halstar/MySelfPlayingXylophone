@@ -2,16 +2,23 @@ import json
 import os
 import threading
 import RPi.GPIO
+
+import utils
 import rotarybutton
 import midireader
+import ioextender
 import xylophone
 import einkscreen
+import display
 import controller
 
 from globals import *
 from log     import *
 
-setup_data = None
+setup_data       = None
+io_extender_low  = None
+io_extender_high = None
+e_ink_screen     = None
 
 
 def print_help():
@@ -25,6 +32,8 @@ def print_help():
     print('Start playing file by index    : p=2')
     print('Stop  playing file (interrupt) : s')
     print('')
+    print('Change note length, in ms : g=20')
+    print('')
     print('Set log level: l=0 > NO_LOG , 1 > ERROR,')
     print('                 2 > WARNING, 3 > INFO , 4 > DEBUG')
     print('')
@@ -32,6 +41,8 @@ def print_help():
     print('Press x to exit with no error')
     print('Press h to display this help')
     print('')
+
+    return
 
 
 def console_thread(midi_reader, main_controller):
@@ -60,9 +71,7 @@ def console_thread(midi_reader, main_controller):
                 is_console_on = False
             elif command == 'x':
                 print('***** EXITING GRACEFULLY *****')
-                if control.gpio_interface == USE_RPI_GPIO:
-                    RPi.GPIO.cleanup()
-                os._exit(0)
+                graceful_exit(0)
             elif command == 'h':
                 print_help()
 
@@ -99,16 +108,26 @@ def console_thread(midi_reader, main_controller):
                 main_controller.play_note(int(value))
             elif command == 'p':
                 main_controller.play_track_by_index(int(value))
+            elif command == 'g':
+                control.note_length = int(value) / 1000.0
+                print('Changing note length to {} ms'.format(int(value)))
+
+    return
 
 
 def main():
 
     global setup_data
+    global io_extender_low
+    global io_extender_high
+    global e_ink_screen
 
     with open(SETUP_FILE, 'r') as json_file:
         setup_data = json.load(json_file)
 
     log_init(setup_data['LOG_LEVEL'])
+
+    control.note_length = setup_data['XYLOPHONE_NOTE_LENGTH'] / 1000.0
 
     if setup_data['START_CONSOLE'] == 1:
         os.system('clear')
@@ -130,20 +149,27 @@ def main():
 
     log(INFO, 'Main >>>>>> initiating HW parts')
 
+    # Check if required PI GPIO daemon is started
+    if (control.gpio_interface == USE_PI_GPIO) and (not utils.is_process_running('pigpiod')):
+
+        log(ERROR, 'pigpiod process not started')
+        graceful_exit(3)
+
     # Setup control buttons
-    mode_button  = rotarybutton.RotaryStatesButton(control.gpio_interface, MODE_BUTTON_PIN_1 , MODE_BUTTON_PIN_2 , MODE_BUTTON_PIN_PRESS , [MODE.STOP, MODE.PLAY_ONE_TRACK, MODE.LOOP_ONE_TRACK, MODE.PLAY_ALL_TRACKS], True)
-    track_button = rotarybutton.RotaryButton      (control.gpio_interface, TRACK_BUTTON_PIN_1, TRACK_BUTTON_PIN_2, TRACK_BUTTON_PIN_PRESS)
-    tempo_button = rotarybutton.RotaryStatesButton(control.gpio_interface, TEMPO_BUTTON_PIN_1, TEMPO_BUTTON_PIN_2, TEMPO_BUTTON_PIN_PRESS, TEMPO_LIST, False)
-    # io_extender_low  = ioextender.IoExtender(setup_data['I2C_BUS_NUMBER'], setup_data['MCP_23017_I2C_ADDRESS_1'])
-    # io_extender_high = ioextender.IoExtender(setup_data['I2C_BUS_NUMBER'], setup_data['MCP_23017_I2C_ADDRESS_2'])
+    mode_button      = rotarybutton.RotaryStatesButton('MODE' , control.gpio_interface, MODE_BUTTON_PIN_1 , MODE_BUTTON_PIN_2 , MODE_BUTTON_PIN_PRESS , [MODE.LOOP_ONE_TRACK, MODE.PLAY_ALL_TRACKS, MODE.PLAY_ONE_TRACK, MODE.STOP], True)
+    track_button     = rotarybutton.RotaryButton      ('TRACK', control.gpio_interface, TRACK_BUTTON_PIN_1, TRACK_BUTTON_PIN_2, TRACK_BUTTON_PIN_PRESS)
+    tempo_button     = rotarybutton.RotaryStatesButton('TEMPO', control.gpio_interface, TEMPO_BUTTON_PIN_1, TEMPO_BUTTON_PIN_2, TEMPO_BUTTON_PIN_PRESS, TEMPO_LIST, False)
+    io_extender_low  = ioextender.IoExtender          (setup_data['I2C_BUS_NUMBER'], setup_data['MCP_23017_I2C_ADDRESS_1'])
+    io_extender_high = ioextender.IoExtender          (setup_data['I2C_BUS_NUMBER'], setup_data['MCP_23017_I2C_ADDRESS_2'])
+    e_ink_screen     = einkscreen.EInkScreen          (setup_data['SPI_BUS_NUMBER'], setup_data['E_INK_SPI_ADDRESS'])
 
     log(INFO, 'Main >>>>>> setting xylophone')
 
-    # Setup actual xylophone and highest level controller
-    # xylophone_device = xylophone.Xylophone  (setup_data['XYLOPHONE_LOWEST_NOTE'], setup_data['XYLOPHONE_NOTES_COUNT'], io_extender_low, io_extender_high)
-    xylophone_device = xylophone.Xylophone(setup_data['XYLOPHONE_LOWEST_NOTE'], setup_data['XYLOPHONE_NOTES_COUNT'], None, None)
-    eink_screen      = einkscreen.EInkScreen(setup_data['I2C_BUS_NUMBER'], setup_data['E_INK_SPI_ADDRESS'], midi_reader)
-    main_controller  = controller.Controller(mode_button, track_button, tempo_button, midi_reader, xylophone_device, eink_screen)
+    # Setup actual xylophone and highest level controllers
+    xylophone_device  = xylophone.Xylophone  (setup_data['XYLOPHONE_LOWEST_NOTE'], setup_data['XYLOPHONE_NOTES_COUNT'], io_extender_low, io_extender_high)
+    # xylophone_device = xylophone.Xylophone(setup_data['XYLOPHONE_LOWEST_NOTE'], setup_data['XYLOPHONE_NOTES_COUNT'], None, None)
+    display_interface = display.Display(e_ink_screen, midi_reader)
+    main_controller   = controller.Controller(mode_button, track_button, tempo_button, midi_reader, xylophone_device, display_interface)
 
     controller_buttons_reader = threading.Thread(target = main_controller.buttons_reader_thread, name='controller_buttons_reader', args = [])
     controller_buttons_reader.start()
@@ -157,11 +183,39 @@ def main():
         console = threading.Thread(target = console_thread, name = 'console', args = [midi_reader, main_controller])
         console.start()
 
-        controller_buttons_reader.join()
-        controller_file_player.join   ()
+    controller_buttons_reader.join()
+    controller_file_player.join   ()
 
     if setup_data['START_CONSOLE'] == 1:
         console.join()
+
+    return
+
+
+def graceful_exit(return_code):
+
+    global io_extender_low
+    global io_extender_high
+    global e_ink_screen
+
+    if io_extender_low is not None:
+        io_extender_low.shutdown()
+
+    if io_extender_high is not None:
+        io_extender_high.shutdown()
+
+    if e_ink_screen is not None:
+
+        e_ink_screen.module_init()
+        e_ink_screen.module_exit()
+
+    if control.gpio_interface == USE_RPI_GPIO:
+        log(INFO, 'Cleaning up GPIOs')
+        RPi.GPIO.cleanup()
+
+    os._exit(return_code)
+
+    return
 
 
 if __name__ == '__main__':
@@ -171,14 +225,11 @@ if __name__ == '__main__':
 
     except KeyboardInterrupt:
         log(ERROR, 'Keyboard interrupt...')
-        os._exit(1)
+        graceful_exit(1)
 
     except Exception as error:
-        log(ERROR, 'Caught exception')
-        log(ERROR, error             )
-        os._exit(2)
+        log(ERROR, 'Caught exception:')
+        log(ERROR, error              )
+        graceful_exit(2)
 
-    finally:
-        if control.gpio_interface == USE_RPI_GPIO:
-            RPi.GPIO.cleanup()
-        os._exit(0)
+    graceful_exit(0)

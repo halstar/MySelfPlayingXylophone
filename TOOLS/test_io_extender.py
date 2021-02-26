@@ -35,6 +35,7 @@ user_input_string = EMPTY_COMMAND
 quit_input_thread = False
 io_extender       = None
 
+
 def user_input_thread():
 
     global user_input_string
@@ -207,6 +208,8 @@ def main():
 
             log(WARNING, 'Unsupported command: "{}"'.format(user_input_string))
             last_command = user_input_string
+
+    return
 
 
 def graceful_exit(return_code):

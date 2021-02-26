@@ -54,10 +54,10 @@ class MidiReader:
                     file_data['events'      ] = events
                     file_data['notes_count'] = len(events)
 
+                    log(DEBUG, 'Registered file #{}: {}'.format(self.files_count, filename))
+
                     self.files.append(file_data)
                     self.files_count += 1
-
-                    log(DEBUG, 'Registered file #{}: {}'.format(self.files_count, filename))
 
         log(INFO, 'Found & parsed {} MIDI files'.format(self.files_count))
 

@@ -2,8 +2,8 @@ import utils
 import time
 import ioextender
 
-from log import *
-
+from log     import *
+from globals import *
 
 class Xylophone:
 
@@ -37,13 +37,13 @@ class Xylophone:
         if play_note < ioextender.IoExtender.IOS_COUNT:
 
             # self.io_extender_low.write_io(play_note, 1)
-            time.sleep(0.01)
+            time.sleep(control.note_length)
             # self.io_extender_low.write_io(play_note, 0)
 
         else:
 
             # self.io_extender_high.write_io(play_note, 1)
-            time.sleep(0.01)
+            time.sleep(control.note_length)
             # self.io_extender_high.write_io(play_note, 0)
 
         return
@@ -74,13 +74,13 @@ class Xylophone:
         if len(low_notes) != 0:
 
             # self.io_extender_low.write_ios(low_notes, 1)
-            time.sleep(0.01)
+            time.sleep(control.note_length)
             # self.io_extender_low.write_ios(low_notes, 0)
 
         if len(high_notes) != 0:
 
             # self.io_extender_high.write_ios(high_notes, 1)
-            time.sleep(0.01)
+            time.sleep(control.note_length)
             # self.io_extender_high.write_ios(high_notes, 0)
 
         return

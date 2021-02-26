@@ -7,21 +7,24 @@ class SpiDevice:
 
     def __init__(self, bus, address):
 
-        log(INFO, 'Setting up I2C device #{}:{}'.format(bus, address))
+        log(INFO, 'Setting up SPI device #{}:{}'.format(bus, address))
 
-        self.device              = spidev.SpiDev()
-        self.device.speed        = 500000
-        self.device.mode         = 1
-        self.device.max_speed_hz = self.speed
-
-        self.device.open(bus, address)
+        self.bus                 = bus
+        self.address             = address
+        self.device              = spidev.SpiDev(bus, address)
+        self.device.mode         = 0
+        self.device.max_speed_hz = 4000000
 
         return
 
-    def read_byte(self, register):
+    def write_bytes(self, data):
 
-        return self.device.xfer2(register)
+        return self.device.writebytes(data)
 
-    def write_byte(self, register, value):
+    def close(self):
 
-        return self.device.xfer2([register, value])
+        log(INFO, 'Closing SPI device #{}:{}'.format(self.bus, self.address))
+
+        self.device.close()
+
+        return

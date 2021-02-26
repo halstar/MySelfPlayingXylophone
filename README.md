@@ -15,9 +15,22 @@ https://www.youtube.com/...
 	* sudo apt-get update
 	* sudo apt-get upgrade
 	
-* Enable I2C & SPI interfaces:
+* Enable SSH, SPI & I2C interfaces:
 
-    * sudo raspi-config	
+    * sudo raspi-config
+    * > 3 Interface Options
+    * > P2 SSH > Yes
+    * > P4 SPI > Yes
+    * > P5 I2C > Yes
+	* sudo reboot
+
+* Disable Desktop environment:
+
+    * sudo raspi-config
+    * > 1 System Options
+    * > S5 Boot / Auto Login
+    * > B2 Console Autologin
+   	* sudo reboot
 	
 * Install PIGPIO library for Python:
 
@@ -30,8 +43,16 @@ https://www.youtube.com/...
 * Setup I2C bus to its maximum speed:
 	
 	* sudo vi /boot/config.txt
-	* dtparam=i2c_arm=on,i2c_arm_baudrate=4000000
+	*    dtparam=i2c_arm=on,i2c_arm_baudrate=400000 (modify the original line, that was 'dtparam=i2c_arm=on')  
 	* sudo reboot
+
+* Disable bluetooth:
+
+    * sudo systemctl disable hciuart.service
+    * sudo systemctl disable bluetooth.service
+	* sudo vi /boot/config.txt
+    *    dtoverlay=disable-bt (add this line at the very bottom of the file)
+    * sudo reboot
 
 * In case it's not already installed, install SPI library for Python:
 

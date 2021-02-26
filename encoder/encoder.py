@@ -28,10 +28,11 @@ class Encoder:
 
     BOUNCE_TIME = 2
 
-    def __init__(self, gpio_interface, encoder_pin_1, encoder_pin_2, encoder_pin_press):
+    def __init__(self, name, gpio_interface, encoder_pin_1, encoder_pin_2, encoder_pin_press):
 
-        log(INFO, 'Setting up Encoder')
+        log(INFO, 'Setting up {} encoder: {} / {} / {}'.format(name, encoder_pin_1, encoder_pin_2, encoder_pin_press))
 
+        self.name              = name
         self.gpio_interface    = gpio_interface
         self.encoder_pin_1     = encoder_pin_1
         self.encoder_pin_2     = encoder_pin_2
@@ -65,10 +66,6 @@ class Encoder:
 
         elif self.gpio_interface == USE_PI_GPIO:
 
-            if not utils.is_process_running('pigpiod'):
-                log(ERROR, 'Encoder: pigpiod process not started')
-                os._exit(3)
-
             self.level_encoder_1 = 0
             self.level_encoder_2 = 0
             self.last_event_gpio = None
@@ -87,8 +84,6 @@ class Encoder:
 
             self.pigpio.callback(encoder_pin_1, pigpio.EITHER_EDGE, self.callback2)
             self.pigpio.callback(encoder_pin_2, pigpio.EITHER_EDGE, self.callback2)
-
-        log(INFO, 'Created encoder: {} / {} / {}'.format(encoder_pin_1, encoder_pin_2, encoder_pin_press))
 
         self.counter = 0
 
@@ -111,7 +106,7 @@ class Encoder:
         else:
             self.counter -= 1
 
-        log(DEBUG, 'Encoder callback 1: pin_1_state - {} / pin_2_state - {} / counter - {}'.format(pin_1_state, pin_2_state, self.counter))
+        log(DEBUG, '{} encoder callback 1: pin_1_state - {} / pin_2_state - {} / counter - {}'.format(self.name, pin_1_state, pin_2_state, self.counter))
 
         return
 
@@ -136,7 +131,7 @@ class Encoder:
                 if self.level_encoder_1 == 1:
                     self.counter += 1
 
-        log(DEBUG, 'Encoder callback 1: level_encoder_1 - {} / level_encoder_2 - {} / counter - {}'.format(self.level_encoder_1, self.level_encoder_2, self.counter))
+        log(DEBUG, '{} encoder callback 1: level_encoder_1 - {} / level_encoder_2 - {} / counter - {}'.format(self.name, self.level_encoder_1, self.level_encoder_2, self.counter))
 
         return
 
@@ -146,7 +141,7 @@ class Encoder:
 
     def reset_counter(self):
 
-        log(DEBUG, 'Encoder counter reset')
+        log(DEBUG, '{} encoder counter reset'.format(self.name))
 
         self.counter = 0
 
@@ -156,7 +151,7 @@ class Encoder:
 
         if self.encoder_pin_press is None:
 
-            log(WARNING, 'Encoder not setup with a press pin')
+            log(WARNING, '{} encoder not setup with a press pin'.format(self.name))
 
             return False
 
@@ -177,5 +172,5 @@ class Encoder:
             if pin_press_state == 0:
                 return False
             else:
-                log(DEBUG, 'Encoder\'s button pressed')
+                log(DEBUG, '{} encoder\'s button pressed'.format(self.name))
                 return True

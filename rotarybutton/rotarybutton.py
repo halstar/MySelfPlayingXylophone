@@ -9,11 +9,12 @@ class RotaryButton:
     DID_NOT_TURN        = 0
     TURNED_TO_THE_RIGHT = 1
 
-    def __init__(self, gpio_interface, encoder_pin_1, encoder_pin_2, encoder_pin_press):
+    def __init__(self, name, gpio_interface, encoder_pin_1, encoder_pin_2, encoder_pin_press):
 
-        log(INFO, 'Setting up  rotary button: {} / {} / {}'.format(encoder_pin_1, encoder_pin_2, encoder_pin_press))
+        log(INFO, 'Setting up {} basic  rotary button: {} / {} / {}'.format(name, encoder_pin_1, encoder_pin_2, encoder_pin_press))
 
-        self.encoder           = encoder.Encoder(gpio_interface, encoder_pin_1, encoder_pin_2, encoder_pin_press)
+        self.name              = name
+        self.encoder           = encoder.Encoder(name, gpio_interface, encoder_pin_1, encoder_pin_2, encoder_pin_press)
         self.last_position     = 0;
         self.last_press_status = False
 
@@ -60,16 +61,21 @@ class RotaryButton:
 
 class RotaryStatesButton(RotaryButton):
 
-    def __init__(self, gpio_interface, encoder_pin_1, encoder_pin_2, encoder_pin_press, states_list, loop_over_states):
+    def __init__(self, name, gpio_interface, encoder_pin_1, encoder_pin_2, encoder_pin_press, states_list, loop_over_states):
 
-        log(INFO, 'Setting up rotary button: {} / {}'.format(states_list, loop_over_states))
+        log(INFO, 'Setting up {} states rotary button: {} / {}'.format(name, states_list, loop_over_states))
 
+        self.name             = name
         self.states_list      = states_list
         self.loop_over_states = loop_over_states
         self.states_count     = len(states_list)
         self.state_index      = 0
 
-        super().__init__(gpio_interface, encoder_pin_1, encoder_pin_2, encoder_pin_press)
+        super().__init__(name, gpio_interface, encoder_pin_1, encoder_pin_2, encoder_pin_press)
+
+    def get_move(self):
+
+        raise NotImplementedError("get_move() function not implemented for states rotary button. get_state() shall be used instead.")
 
     def set_state(self, state):
 
@@ -81,11 +87,11 @@ class RotaryStatesButton(RotaryButton):
         else:
 
             self.state_index = self.states_list.index(state)
-            log(DEBUG, 'Setting button state to value: {}'.format(state))
+            log(DEBUG, 'Setting {} button state to value: {}'.format(self.name, state))
 
     def get_state(self):
 
-        current_move = self.get_move()
+        current_move = super().get_move()
 
         if current_move == self.TURNED_TO_THE_LEFT:
             self.state_index -= 1
