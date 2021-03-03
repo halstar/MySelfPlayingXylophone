@@ -7,7 +7,7 @@ from globals import *
 
 class Xylophone:
 
-    def __init__(self, lowest_note, notes_count, io_extender_low, io_extender_high):
+    def __init__(self, lowest_note, notes_count, max_simultaneous_notes, io_extender_low, io_extender_high):
 
         log(INFO, 'Setup Xylophone with {} notes'.format(notes_count))
 
@@ -16,10 +16,11 @@ class Xylophone:
         log(DEBUG, 'Lowest  note: {} ({})'.format(utils.get_note_name_from_midi_number(lowest_note ), lowest_note ))
         log(DEBUG, 'Highest note: {} ({})'.format(utils.get_note_name_from_midi_number(highest_note), highest_note))
 
-        self.lowest_note      = lowest_note
-        self.highest_note     = highest_note
-        self.io_extender_low  = io_extender_low
-        self.io_extender_high = io_extender_high
+        self.lowest_note            = lowest_note
+        self.highest_note           = highest_note
+        self.max_simultaneous_notes = max_simultaneous_notes
+        self.io_extender_low        = io_extender_low
+        self.io_extender_high       = io_extender_high
 
         return
 
@@ -32,25 +33,31 @@ class Xylophone:
             log(ERROR, 'Cannot play note; out of range value: {}'.format(note))
             return
 
-        play_note = note - self.lowest_note
+        note_pin = note - self.lowest_note
 
-        if play_note < ioextender.IoExtender.IOS_COUNT:
+        if note_pin < ioextender.IoExtender.IOS_COUNT:
 
-            # self.io_extender_low.write_io(play_note, 1)
+            self.io_extender_low.write_io(note_pin, 1)
             time.sleep(control.note_length)
-            # self.io_extender_low.write_io(play_note, 0)
+            self.io_extender_low.write_io(note_pin, 0)
 
         else:
 
-            # self.io_extender_high.write_io(play_note, 1)
+            self.io_extender_high.write_io(note_pin - ioextender.IoExtender.IOS_COUNT, 1)
             time.sleep(control.note_length)
-            # self.io_extender_high.write_io(play_note, 0)
+            self.io_extender_high.write_io(note_pin - ioextender.IoExtender.IOS_COUNT, 0)
 
         return
 
     def play_notes(self, notes):
 
-        log(DEBUG, 'Xylophone playing note(s) #{}'.format(notes))
+        log(DEBUG, 'Xylophone playing note(s) {}'.format(notes))
+
+        if len(notes) > self.max_simultaneous_notes:
+
+            log(WARNING, 'Maximum allowed simultaneous notes passed; dropping notes: {}'.format(notes[self.max_simultaneous_notes:]))
+
+            notes = notes[:self.max_simultaneous_notes]
 
         for note in notes:
 
@@ -59,28 +66,53 @@ class Xylophone:
                 log(ERROR, 'Cannot play note(s); out of range value: {}'.format(note))
                 return
 
-        low_notes  = []
-        high_notes = []
+        low_notes_0  = []
+        low_notes_1  = []
+        high_notes_0 = []
+        high_notes_1 = []
 
         for note in notes:
 
-            play_note = note - self.lowest_note
+            note_pin = note - self.lowest_note
 
-            if play_note < ioextender.IoExtender.IOS_COUNT:
-                low_notes.append(play_note)
+            pin_value_0 = {}
+            pin_value_1 = {}
+
+            pin_value_0['value'] = 0
+            pin_value_1['value'] = 1
+
+            if note_pin < ioextender.IoExtender.IOS_COUNT:
+
+                pin_value_0['pin'] = note_pin
+                pin_value_1['pin'] = note_pin
+
+                low_notes_0.append(pin_value_0)
+                low_notes_1.append(pin_value_1)
+
             else:
-                high_notes.append(play_note)
 
-        if len(low_notes) != 0:
+                pin_value_0['pin'] = note_pin - ioextender.IoExtender.IOS_COUNT
+                pin_value_1['pin'] = note_pin - ioextender.IoExtender.IOS_COUNT
 
-            # self.io_extender_low.write_ios(low_notes, 1)
-            time.sleep(control.note_length)
-            # self.io_extender_low.write_ios(low_notes, 0)
+                high_notes_0.append(pin_value_0)
+                high_notes_1.append(pin_value_1)
 
-        if len(high_notes) != 0:
+        if len(low_notes_1) != 0:
 
-            # self.io_extender_high.write_ios(high_notes, 1)
-            time.sleep(control.note_length)
-            # self.io_extender_high.write_ios(high_notes, 0)
+            self.io_extender_low.write_ios(low_notes_1)
+
+        if len(high_notes_1) != 0:
+
+            self.io_extender_high.write_ios(high_notes_1)
+
+        time.sleep(control.note_length)
+
+        if len(low_notes_0) != 0:
+
+            self.io_extender_low.write_ios(low_notes_0)
+
+        if len(high_notes_0) != 0:
+
+            self.io_extender_high.write_ios(high_notes_0)
 
         return

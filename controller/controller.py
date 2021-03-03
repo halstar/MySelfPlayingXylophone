@@ -1,6 +1,5 @@
 import time
 import midireader
-import rotarybutton
 
 from log     import *
 from globals import *
@@ -25,10 +24,10 @@ class Controller:
 
         self.mode        = DEFAULT_MODE
         self.track_index = DEFAULT_TRACK
-        self.track_tempo = DEFAULT_TEMPO
+        self.track_tempo = midi_reader.get_file_tempo(DEFAULT_TRACK)
 
-        self.mode_button.set_state (self.mode)
-        # No need to set track button defaut state as it's not state based
+        self.mode_button.set_state (self.mode       )
+        self.track_button.set_state(self.track_index)
         self.tempo_button.set_state(self.track_tempo)
 
         self.tracks_count = midi_reader.get_files_count()
@@ -36,7 +35,7 @@ class Controller:
 
         return
 
-    def play_note(self, note):
+    def play_note_from_console(self, note):
 
         self.xylophone.play_note(note)
 
@@ -48,9 +47,22 @@ class Controller:
 
         return
 
-    def play_track_by_index(self, index):
+    def play_track_from_console(self, index):
 
-        self.track_index = index
+        # Force track change to show up on display
+        self.track_button.set_state(index)
+
+        # Force tempo change to play that file at its default pace
+        self.track_tempo = self.midi_reader.get_file_tempo(index)
+        self.tempo_button.set_state(self.track_tempo)
+
+        # Force mode change to just play that file
+        self.mode = MODE.PLAY_ONE_TRACK
+        self.mode_button.set_state(self.mode)
+
+        # Sleep a bit to make sure that buttons reader thread had time to update
+        time.sleep(MAIN_LOOP_SLEEP_TIME)
+
         self.play_track()
 
         return
@@ -58,6 +70,16 @@ class Controller:
     def stop_track(self):
 
         self.state = self.STATE_STOPPING_TRACK
+
+        return
+
+    def set_tempo_from_console(self, tempo):
+
+        # Force tempo change to show up on display
+        self.tempo_button.set_state(self.track_tempo)
+
+        # Sleep a bit to make sure that buttons reader thread had time to update
+        time.sleep(MAIN_LOOP_SLEEP_TIME)
 
         return
 
@@ -69,7 +91,7 @@ class Controller:
 
             # Deal with all 3 buttons position
             self.mode        = self.mode_button.get_state ()
-            self.track_index = self.track_button.get_value() % self.tracks_count
+            self.track_index = self.track_button.get_state()
             self.track_tempo = self.tempo_button.get_state()
 
             # Possibly update screen with possible new preset mode/track/tempo
@@ -100,15 +122,22 @@ class Controller:
 
             if self.track_button.was_clicked() == True:
 
-                self.display.set_track(self.track_index)
-
-                # Possibly stop current track reading 
+                # Possibly stop current track reading
                 if self.state == self.STATE_PLAYING_TRACK:
                     self.stop_track()
 
                 # Force mode change to just play that file
                 self.mode = MODE.PLAY_ONE_TRACK
                 self.mode_button.set_state(self.mode)
+                self.display.set_mode     (self.mode)
+
+                # Force tempo change to play that file at its default pace
+                self.track_tempo = self.midi_reader.get_file_tempo(self.track_index)
+                self.tempo_button.set_state(self.track_tempo)
+                self.display.set_tempo     (self.track_tempo)
+
+                # Update the requested track on display
+                self.display.set_track(self.track_index)
 
                 # Now start (or restart) selected track reading
                 self.play_track()
@@ -134,6 +163,7 @@ class Controller:
                 # If we could not start, we consider playing is done
                 is_done = not start_status
 
+                # File reading can be interrupted by pushing MODE button to STOP
                 while (is_done == False) and (self.state != self.STATE_STOPPING_TRACK):
 
                     is_done, event = self.midi_reader.get_playing_event()
@@ -146,6 +176,7 @@ class Controller:
                         else:
                             self.xylophone.play_notes(event['value'])
 
+                # Stop file reading only if we actually started reading one
                 if start_status == True:
 
                     self.midi_reader.stop_playing_file()
@@ -153,31 +184,40 @@ class Controller:
                 if self.mode == MODE.LOOP_ONE_TRACK:
 
                     # Keep current track index and controller state unchanged
-                    # so that we will just restart and play the same file
-                    pass
+                    # so that we will just restart and play the same file.
+                    # Just sleep a bit in between track repetitions...
+                    time.sleep(INTER_TRACKS_SLEEP)
 
                 elif self.mode == MODE.PLAY_ALL_TRACKS:
 
                     # Increment current track index and keep controller state unchanged
                     # so that we will start and play next file; stop at the end of the list
-                    if self.track_index + 1  == self.tracks_count - 1:
+                    if self.track_index + 1  == self.tracks_count:
 
-                        self.track_index = -1
-                        self.state = self.STATE_IDLE
+                        self.state = self.STATE_STOPPING_TRACK
 
                     else:
 
                         self.track_index += 1
 
+                        # Force track change to show up
+                        self.track_button.set_state(self.track_index)
+                        self.display.set_track     (self.track_index)
+
+                        # Sleep a bit in between tracks...
+                        time.sleep(INTER_TRACKS_SLEEP)
+
                 else:
 
                     # Case of the following modes: STOP & PLAY_ONE_TRACK
-                    self.track_index = -1
-                    self.state    = self.STATE_IDLE
+                    self.state = self.STATE_STOPPING_TRACK
 
             elif self.state == self.STATE_STOPPING_TRACK:
 
-                self.midi_reader.stop_playing_file()
+                # Force mode change to show up that we are now stopped
+                self.mode = MODE.STOP
+                self.mode_button.set_state(self.mode)
+                self.display.set_mode     (self.mode)
 
                 self.state = self.STATE_IDLE
 

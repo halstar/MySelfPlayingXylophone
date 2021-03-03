@@ -1,4 +1,5 @@
 import os
+import math
 
 from log     import *
 from globals import *
@@ -8,16 +9,19 @@ from PIL import Image, ImageDraw, ImageFont
 
 class Display:
 
-    BIGGER_LINE_HEIGHT   =  30
-    HORIZONTAL_MARGIN    =  10
-    LEFT_PANEL_MID_WIDTH = 100
-    LEFT_PANEL_WIDTH     = 160
-    TITLE_FONT_HEIGHT    =  18
-    TEXT_FONT_HEIGHT     =  16
-    SELECTION_MARGIN     =   5
+    BIGGER_LINE_HEIGHT      =  30
+    HORIZONTAL_MARGIN       =  10
+    LEFT_PANEL_MID_WIDTH    = 100
+    LEFT_PANEL_WIDTH        = 160
+    TITLE_FONT_HEIGHT       =  18
+    TEXT_FONT_HEIGHT        =  16
+    BIGGER_SELECTION_MARGIN =   5
 
-    SMALLER_LINE_HEIGHT  = 20
-    DISPLAY_TRACKS_COUNT =  4
+    SMALLER_LINE_HEIGHT      = 18
+    DISPLAY_TRACKS_COUNT     =  5
+    SMALLER_SELECTION_MARGIN =  1
+
+    TRACK_NAME_MAXIMUM_LENGTH = 13
 
     SETTINGS_TITLE  = 'Main settings'
     TRACKS_TITLE    = 'Track selection'
@@ -39,13 +43,15 @@ class Display:
         self.mode_preset        = None
         self.track_index        = None
         self.track_preset_index = None
+        self.track_offset_index = 0
         self.tempo              = None
         self.tempo_preset       = None
         self.tracks_count       = self.midi_reader.get_files_count()
         self.tracks             = []
 
-        self.title_vertical_offset = (self.BIGGER_LINE_HEIGHT - self.TITLE_FONT_HEIGHT) / 2
-        self.text_vertical_offset  = (self.BIGGER_LINE_HEIGHT - self.TEXT_FONT_HEIGHT ) / 2
+        self.title_vertical_offset        = math.ceil((self.BIGGER_LINE_HEIGHT  - self.TITLE_FONT_HEIGHT) / 2.0)
+        self.bigger_text_vertical_offset  = math.ceil((self.BIGGER_LINE_HEIGHT  - self.TEXT_FONT_HEIGHT ) / 2.0)
+        self.smaller_text_vertical_offset = math.ceil((self.SMALLER_LINE_HEIGHT - self.TEXT_FONT_HEIGHT ) / 2.0)
 
         for track_index in range(0, self.tracks_count):
 
@@ -53,9 +59,9 @@ class Display:
 
             name_without_ext, ext = os.path.splitext(name)
 
-            if len(name_without_ext) > 13:
+            if len(name_without_ext) > self.TRACK_NAME_MAXIMUM_LENGTH:
 
-                name_without_ext = name_without_ext[:13] + '...'
+                name_without_ext = name_without_ext[:self.TRACK_NAME_MAXIMUM_LENGTH] + '...'
 
             track = {'name' : name_without_ext, 'tempo' : tempo, 'length' : length}
 
@@ -76,6 +82,7 @@ class Display:
 
         self.e_ink_screen.module_init()
 
+        # Draw a simple rectangle around screen
         self.drawer.rectangle((0, 0, E_INK_SCREEN_HEIGHT - 1, E_INK_SCREEN_WIDTH - 1), outline = 0)
 
         # Draw Main settings title
@@ -84,13 +91,8 @@ class Display:
                           self.SETTINGS_TITLE,
                           font = self.title_font,
                           fill = 0)
-        self.drawer.line((0,
-                          self.BIGGER_LINE_HEIGHT,
-                          E_INK_SCREEN_HEIGHT - 1,
-                          self.BIGGER_LINE_HEIGHT),
-                          fill = 0)
 
-        # Initialize Mode drawing
+        # Initialize Mode drawing, with no selection
         self.__draw_mode_text__(MODE.PLAY_ONE_TRACK , False)
         self.__draw_mode_text__(MODE.PLAY_ALL_TRACKS, False)
         self.__draw_mode_text__(MODE.LOOP_ONE_TRACK , False)
@@ -102,9 +104,9 @@ class Display:
                           self.BIGGER_LINE_HEIGHT * 3),
                           fill = 0)
 
-        # Initialize Tempo drawing
+        # Initialize Tempo drawing, with no value
         self.drawer.text((self.HORIZONTAL_MARGIN,
-                          self.BIGGER_LINE_HEIGHT * 3 + self.text_vertical_offset),
+                          self.BIGGER_LINE_HEIGHT * 3 + self.bigger_text_vertical_offset),
                           self.TEMPO_TEXT,
                           font = self.text_font,
                           fill = 0)
@@ -122,31 +124,38 @@ class Display:
                           font = self.title_font,
                           fill = 0)
 
-        # Initialize Tracks drawing
-
-        for line_index in range(0, self.DISPLAY_TRACKS_COUNT):
-
-            self.__draw_track_text__(line_index, line_index, False)
+        # Draw a line under both titles
+        self.drawer.line((0,
+                          self.BIGGER_LINE_HEIGHT,
+                          E_INK_SCREEN_HEIGHT - 1,
+                          self.BIGGER_LINE_HEIGHT),
+                          fill = 0)
 
         e_ink_screen.display_base(self.image)
 
+        # Setup mode, tracks  and tempo with initial values
         self.set_mode (DEFAULT_MODE )
         self.set_track(DEFAULT_TRACK)
-        self.set_tempo(DEFAULT_TEMPO)
+        self.set_tempo(self.midi_reader.get_file_tempo(DEFAULT_TRACK))
 
         return
 
-    def __draw_mode_text__(self, mode, is_inverted):
+    @staticmethod
+    def __get_fill_color__(is_inverted):
 
         if is_inverted == True:
-            fill_color = 255
+            return 255
         else:
-            fill_color = 0
+            return 0
+
+    def __draw_mode_text__(self, mode, is_inverted):
+
+        fill_color = self.__get_fill_color__(is_inverted)
 
         if mode == MODE.PLAY_ONE_TRACK:
 
             self.drawer.text((self.HORIZONTAL_MARGIN,
-                              self.BIGGER_LINE_HEIGHT * 1 + self.text_vertical_offset),
+                              self.BIGGER_LINE_HEIGHT * 1 + self.bigger_text_vertical_offset),
                               self.PLAY_TRACK_TEXT,
                               font = self.text_font,
                               fill = fill_color)
@@ -154,7 +163,7 @@ class Display:
         elif mode == MODE.PLAY_ALL_TRACKS:
 
             self.drawer.text((self.LEFT_PANEL_MID_WIDTH,
-                              self.BIGGER_LINE_HEIGHT * 1 + self.text_vertical_offset),
+                              self.BIGGER_LINE_HEIGHT * 1 + self.bigger_text_vertical_offset),
                               self.PLAY_ALL_TEXT,
                               font = self.text_font,
                               fill = fill_color)
@@ -162,7 +171,7 @@ class Display:
         elif mode == MODE.LOOP_ONE_TRACK:
 
             self.drawer.text((self.HORIZONTAL_MARGIN,
-                              self.BIGGER_LINE_HEIGHT * 2 + self.text_vertical_offset),
+                              self.BIGGER_LINE_HEIGHT * 2 + self.bigger_text_vertical_offset),
                               self.LOOP_TRACK_TEXT,
                               font = self.text_font,
                               fill = fill_color)
@@ -170,7 +179,7 @@ class Display:
         elif mode == MODE.STOP:
 
             self.drawer.text((self.LEFT_PANEL_MID_WIDTH,
-                              self.BIGGER_LINE_HEIGHT * 2 + self.text_vertical_offset),
+                              self.BIGGER_LINE_HEIGHT * 2 + self.bigger_text_vertical_offset),
                               self.STOP_TEXT,
                               font = self.text_font,
                               fill = fill_color)
@@ -179,25 +188,45 @@ class Display:
 
     def __draw_tempo_value__(self, tempo_value):
 
-        self.drawer.text((self.HORIZONTAL_MARGIN + self.tempo_text_width + self.HORIZONTAL_MARGIN,
-                          self.BIGGER_LINE_HEIGHT * 3 + self.text_vertical_offset),
+        self.drawer.text((self.HORIZONTAL_MARGIN  + self.tempo_text_width + self.HORIZONTAL_MARGIN,
+                          self.BIGGER_LINE_HEIGHT * 3 + self.bigger_text_vertical_offset),
                           str(tempo_value),
                           font = self.text_font,
                           fill = 0)
 
         return
 
-    def __draw_track_text__(self, track_index, line_index, is_inverted):
+    def __clear_right_panel__(self):
 
-        if is_inverted == True:
-            fill_color = 255
-        else:
-            fill_color = 0
+        self.drawer.rectangle((self.LEFT_PANEL_WIDTH   + 1,
+                               self.BIGGER_LINE_HEIGHT + 1,
+                               E_INK_SCREEN_HEIGHT     - 2,
+                               E_INK_SCREEN_WIDTH      - 2),
+                               fill = 255)
 
-        log(INFO, 'track {} / {}'.format(track_index, self.tracks[track_index]['name']))
+        return
 
-        self.drawer.text((self.LEFT_PANEL_WIDTH + self.HORIZONTAL_MARGIN,
-                          self.BIGGER_LINE_HEIGHT + self.SMALLER_LINE_HEIGHT * line_index + self.text_vertical_offset),
+    def __draw_tracks_text__(self, inverted_track_index):
+
+        for display_index in range(0, self.DISPLAY_TRACKS_COUNT):
+
+            track_index = self.track_offset_index + display_index
+
+            if track_index < self.tracks_count:
+
+                if (inverted_track_index is not None) and (inverted_track_index == track_index):
+                    self.__draw_track_text__(track_index, display_index, True)
+                else:
+                    self.__draw_track_text__(track_index, display_index, False)
+
+        return
+
+    def __draw_track_text__(self, track_index, display_index, is_inverted):
+
+        fill_color = self.__get_fill_color__(is_inverted)
+
+        self.drawer.text((self.LEFT_PANEL_WIDTH   + self.HORIZONTAL_MARGIN,
+                          self.BIGGER_LINE_HEIGHT + self.SMALLER_LINE_HEIGHT * display_index + self.smaller_text_vertical_offset),
                           self.tracks[track_index]['name'],
                           font = self.text_font,
                           fill = fill_color)
@@ -208,41 +237,40 @@ class Display:
 
         if mode == MODE.PLAY_ONE_TRACK:
 
-            self.drawer.rectangle((self.HORIZONTAL_MARGIN - self.SELECTION_MARGIN,
-                                   self.BIGGER_LINE_HEIGHT * 1 + self.SELECTION_MARGIN,
-                                   self.HORIZONTAL_MARGIN + self.play_track_text_width + self.SELECTION_MARGIN,
-                                   self.BIGGER_LINE_HEIGHT * 2 - self.SELECTION_MARGIN),
+            self.drawer.rectangle((self.HORIZONTAL_MARGIN  - self.BIGGER_SELECTION_MARGIN,
+                                   self.BIGGER_LINE_HEIGHT * 1 + self.BIGGER_SELECTION_MARGIN,
+                                   self.HORIZONTAL_MARGIN  + self.play_track_text_width + self.BIGGER_SELECTION_MARGIN,
+                                   self.BIGGER_LINE_HEIGHT * 2 - self.BIGGER_SELECTION_MARGIN),
                                    fill = 255)
 
             self.__draw_mode_text__(MODE.PLAY_ONE_TRACK, False)
 
-
         elif mode == MODE.PLAY_ALL_TRACKS:
 
-            self.drawer.rectangle((self.LEFT_PANEL_MID_WIDTH - self.SELECTION_MARGIN,
-                                   self.BIGGER_LINE_HEIGHT * 1 + self.SELECTION_MARGIN,
-                                   self.LEFT_PANEL_MID_WIDTH + self.play_all_text_width + self.SELECTION_MARGIN,
-                                   self.BIGGER_LINE_HEIGHT * 2 - self.SELECTION_MARGIN),
+            self.drawer.rectangle((self.LEFT_PANEL_MID_WIDTH - self.BIGGER_SELECTION_MARGIN,
+                                   self.BIGGER_LINE_HEIGHT   * 1 + self.BIGGER_SELECTION_MARGIN,
+                                   self.LEFT_PANEL_MID_WIDTH + self.play_all_text_width + self.BIGGER_SELECTION_MARGIN,
+                                   self.BIGGER_LINE_HEIGHT   * 2 - self.BIGGER_SELECTION_MARGIN),
                                    fill = 255)
 
             self.__draw_mode_text__(MODE.PLAY_ALL_TRACKS, False)
 
         elif mode == MODE.LOOP_ONE_TRACK:
 
-            self.drawer.rectangle((self.HORIZONTAL_MARGIN - self.SELECTION_MARGIN,
-                                   self.BIGGER_LINE_HEIGHT * 2 + self.SELECTION_MARGIN,
-                                   self.HORIZONTAL_MARGIN + self.loop_track_text_width + self.SELECTION_MARGIN,
-                                   self.BIGGER_LINE_HEIGHT * 3 - self.SELECTION_MARGIN),
+            self.drawer.rectangle((self.HORIZONTAL_MARGIN  - self.BIGGER_SELECTION_MARGIN,
+                                   self.BIGGER_LINE_HEIGHT * 2 + self.BIGGER_SELECTION_MARGIN,
+                                   self.HORIZONTAL_MARGIN  + self.loop_track_text_width + self.BIGGER_SELECTION_MARGIN,
+                                   self.BIGGER_LINE_HEIGHT * 3 - self.BIGGER_SELECTION_MARGIN),
                                    fill = 255)
 
             self.__draw_mode_text__(MODE.LOOP_ONE_TRACK, False)
 
         elif mode == MODE.STOP:
 
-            self.drawer.rectangle((self.LEFT_PANEL_MID_WIDTH - self.SELECTION_MARGIN,
-                                   self.BIGGER_LINE_HEIGHT * 2 + self.SELECTION_MARGIN,
-                                   self.LEFT_PANEL_MID_WIDTH + self.stop_text_width + self.SELECTION_MARGIN,
-                                   self.BIGGER_LINE_HEIGHT * 3 - self.SELECTION_MARGIN),
+            self.drawer.rectangle((self.LEFT_PANEL_MID_WIDTH - self.BIGGER_SELECTION_MARGIN,
+                                   self.BIGGER_LINE_HEIGHT   * 2 + self.BIGGER_SELECTION_MARGIN,
+                                   self.LEFT_PANEL_MID_WIDTH + self.stop_text_width + self.BIGGER_SELECTION_MARGIN,
+                                   self.BIGGER_LINE_HEIGHT   * 3 - self.BIGGER_SELECTION_MARGIN),
                                    fill = 255)
 
             self.__draw_mode_text__(MODE.STOP, False)
@@ -261,36 +289,35 @@ class Display:
 
         if mode == MODE.PLAY_ONE_TRACK:
 
-            self.drawer.rectangle((self.HORIZONTAL_MARGIN - self.SELECTION_MARGIN,
-                                   self.BIGGER_LINE_HEIGHT * 1 + self.SELECTION_MARGIN,
-                                   self.HORIZONTAL_MARGIN + self.play_track_text_width + self.SELECTION_MARGIN,
-                                   self.BIGGER_LINE_HEIGHT * 2 - self.SELECTION_MARGIN),
+            self.drawer.rectangle((self.HORIZONTAL_MARGIN  - self.BIGGER_SELECTION_MARGIN,
+                                   self.BIGGER_LINE_HEIGHT * 1 + self.BIGGER_SELECTION_MARGIN,
+                                   self.HORIZONTAL_MARGIN  + self.play_track_text_width + self.BIGGER_SELECTION_MARGIN,
+                                   self.BIGGER_LINE_HEIGHT * 2 - self.BIGGER_SELECTION_MARGIN),
                                    outline = 0)
 
         elif mode == MODE.PLAY_ALL_TRACKS:
 
-            self.drawer.rectangle((self.LEFT_PANEL_MID_WIDTH - self.SELECTION_MARGIN,
-                                   self.BIGGER_LINE_HEIGHT * 1 + self.SELECTION_MARGIN,
-                                   self.LEFT_PANEL_MID_WIDTH + self.play_all_text_width + self.SELECTION_MARGIN,
-                                   self.BIGGER_LINE_HEIGHT * 2 - self.SELECTION_MARGIN),
+            self.drawer.rectangle((self.LEFT_PANEL_MID_WIDTH - self.BIGGER_SELECTION_MARGIN,
+                                   self.BIGGER_LINE_HEIGHT   * 1 + self.BIGGER_SELECTION_MARGIN,
+                                   self.LEFT_PANEL_MID_WIDTH + self.play_all_text_width + self.BIGGER_SELECTION_MARGIN,
+                                   self.BIGGER_LINE_HEIGHT   * 2 - self.BIGGER_SELECTION_MARGIN),
                                    outline = 0)
 
         elif mode == MODE.LOOP_ONE_TRACK:
 
-            self.drawer.rectangle((self.HORIZONTAL_MARGIN - self.SELECTION_MARGIN,
-                                   self.BIGGER_LINE_HEIGHT * 2 + self.SELECTION_MARGIN,
-                                   self.HORIZONTAL_MARGIN + self.loop_track_text_width + self.SELECTION_MARGIN,
-                                   self.BIGGER_LINE_HEIGHT * 3 - self.SELECTION_MARGIN),
+            self.drawer.rectangle((self.HORIZONTAL_MARGIN  - self.BIGGER_SELECTION_MARGIN,
+                                   self.BIGGER_LINE_HEIGHT * 2 + self.BIGGER_SELECTION_MARGIN,
+                                   self.HORIZONTAL_MARGIN  + self.loop_track_text_width + self.BIGGER_SELECTION_MARGIN,
+                                   self.BIGGER_LINE_HEIGHT * 3 - self.BIGGER_SELECTION_MARGIN),
                                    outline = 0)
 
         elif mode == MODE.STOP:
 
-            self.drawer.rectangle((self.LEFT_PANEL_MID_WIDTH - self.SELECTION_MARGIN,
-                                   self.BIGGER_LINE_HEIGHT * 2 + self.SELECTION_MARGIN,
-                                   self.LEFT_PANEL_MID_WIDTH + self.stop_text_width + self.SELECTION_MARGIN,
-                                   self.BIGGER_LINE_HEIGHT * 3 - self.SELECTION_MARGIN),
+            self.drawer.rectangle((self.LEFT_PANEL_MID_WIDTH - self.BIGGER_SELECTION_MARGIN,
+                                   self.BIGGER_LINE_HEIGHT   * 2 + self.BIGGER_SELECTION_MARGIN,
+                                   self.LEFT_PANEL_MID_WIDTH + self.stop_text_width + self.BIGGER_SELECTION_MARGIN,
+                                   self.BIGGER_LINE_HEIGHT   * 3 - self.BIGGER_SELECTION_MARGIN),
                                    outline = 0)
-
 
         else:
 
@@ -313,40 +340,40 @@ class Display:
 
         if mode == MODE.PLAY_ONE_TRACK:
 
-            self.drawer.rectangle((self.HORIZONTAL_MARGIN - self.SELECTION_MARGIN,
-                                   self.BIGGER_LINE_HEIGHT + self.SELECTION_MARGIN,
-                                   self.HORIZONTAL_MARGIN + self.play_track_text_width + self.SELECTION_MARGIN,
-                                   self.BIGGER_LINE_HEIGHT * 2 - self.SELECTION_MARGIN),
+            self.drawer.rectangle((self.HORIZONTAL_MARGIN  - self.BIGGER_SELECTION_MARGIN,
+                                   self.BIGGER_LINE_HEIGHT + self.BIGGER_SELECTION_MARGIN,
+                                   self.HORIZONTAL_MARGIN  + self.play_track_text_width + self.BIGGER_SELECTION_MARGIN,
+                                   self.BIGGER_LINE_HEIGHT * 2 - self.BIGGER_SELECTION_MARGIN),
                                    fill = 0)
 
             self.__draw_mode_text__(MODE.PLAY_ONE_TRACK, True)
 
         elif mode == MODE.PLAY_ALL_TRACKS:
 
-            self.drawer.rectangle((self.LEFT_PANEL_MID_WIDTH - self.SELECTION_MARGIN,
-                                   self.BIGGER_LINE_HEIGHT * 1 + self.SELECTION_MARGIN,
-                                   self.LEFT_PANEL_MID_WIDTH + self.play_all_text_width + self.SELECTION_MARGIN,
-                                   self.BIGGER_LINE_HEIGHT * 2 - self.SELECTION_MARGIN),
+            self.drawer.rectangle((self.LEFT_PANEL_MID_WIDTH - self.BIGGER_SELECTION_MARGIN,
+                                   self.BIGGER_LINE_HEIGHT   * 1 + self.BIGGER_SELECTION_MARGIN,
+                                   self.LEFT_PANEL_MID_WIDTH + self.play_all_text_width + self.BIGGER_SELECTION_MARGIN,
+                                   self.BIGGER_LINE_HEIGHT   * 2 - self.BIGGER_SELECTION_MARGIN),
                                    fill = 0)
 
             self.__draw_mode_text__(MODE.PLAY_ALL_TRACKS, True)
 
         elif mode == MODE.LOOP_ONE_TRACK:
 
-            self.drawer.rectangle((self.HORIZONTAL_MARGIN - self.SELECTION_MARGIN,
-                                   self.BIGGER_LINE_HEIGHT * 2 + self.SELECTION_MARGIN,
-                                   self.HORIZONTAL_MARGIN + self.loop_track_text_width + self.SELECTION_MARGIN,
-                                   self.BIGGER_LINE_HEIGHT * 3 - self.SELECTION_MARGIN),
+            self.drawer.rectangle((self.HORIZONTAL_MARGIN  - self.BIGGER_SELECTION_MARGIN,
+                                   self.BIGGER_LINE_HEIGHT * 2 + self.BIGGER_SELECTION_MARGIN,
+                                   self.HORIZONTAL_MARGIN  + self.loop_track_text_width + self.BIGGER_SELECTION_MARGIN,
+                                   self.BIGGER_LINE_HEIGHT * 3 - self.BIGGER_SELECTION_MARGIN),
                                    fill = 0)
 
             self.__draw_mode_text__(MODE.LOOP_ONE_TRACK, True)
 
         elif mode == MODE.STOP:
 
-            self.drawer.rectangle((self.LEFT_PANEL_MID_WIDTH - self.SELECTION_MARGIN,
-                                   self.BIGGER_LINE_HEIGHT * 2 + self.SELECTION_MARGIN,
-                                   self.LEFT_PANEL_MID_WIDTH + self.stop_text_width + self.SELECTION_MARGIN,
-                                   self.BIGGER_LINE_HEIGHT * 3 - self.SELECTION_MARGIN),
+            self.drawer.rectangle((self.LEFT_PANEL_MID_WIDTH - self.BIGGER_SELECTION_MARGIN,
+                                   self.BIGGER_LINE_HEIGHT   * 2 + self.BIGGER_SELECTION_MARGIN,
+                                   self.LEFT_PANEL_MID_WIDTH + self.stop_text_width + self.BIGGER_SELECTION_MARGIN,
+                                   self.BIGGER_LINE_HEIGHT   * 3 - self.BIGGER_SELECTION_MARGIN),
                                    fill = 0)
 
             self.__draw_mode_text__(MODE.STOP, True)
@@ -367,7 +394,36 @@ class Display:
         if index == self.track_preset_index:
             return
 
-        log(INFO, 'Display preset track: {}'.format(index))
+        log(INFO, 'Display preset track: {}'.format(self.tracks[index]['name']))
+
+        self.__clear_right_panel__()
+
+        if index < self.track_offset_index:
+
+            self.track_offset_index -= 1
+
+        elif index >= self.track_offset_index + self.DISPLAY_TRACKS_COUNT:
+
+            self.track_offset_index += 1
+
+        preset_display_index = index            - self.track_offset_index
+        set_display_index    = self.track_index - self.track_offset_index
+
+        if 0 <= set_display_index < self.DISPLAY_TRACKS_COUNT - 1:
+
+            self.drawer.rectangle((self.LEFT_PANEL_WIDTH   + self.HORIZONTAL_MARGIN - self.BIGGER_SELECTION_MARGIN ,
+                                   self.BIGGER_LINE_HEIGHT + self.SMALLER_LINE_HEIGHT * set_display_index + self.SMALLER_SELECTION_MARGIN ,
+                                   E_INK_SCREEN_HEIGHT     - self.BIGGER_SELECTION_MARGIN,
+                                   self.BIGGER_LINE_HEIGHT + self.SMALLER_LINE_HEIGHT * (set_display_index + 1)),
+                                   fill = 0)
+
+        self.drawer.rectangle((self.LEFT_PANEL_WIDTH   + self.HORIZONTAL_MARGIN - self.BIGGER_SELECTION_MARGIN ,
+                               self.BIGGER_LINE_HEIGHT + self.SMALLER_LINE_HEIGHT * preset_display_index + self.SMALLER_SELECTION_MARGIN ,
+                               E_INK_SCREEN_HEIGHT     - self.BIGGER_SELECTION_MARGIN,
+                               self.BIGGER_LINE_HEIGHT + self.SMALLER_LINE_HEIGHT * (preset_display_index + 1)),
+                               outline = 0)
+
+        self.__draw_tracks_text__(self.track_index)
 
         self.e_ink_screen.display_partial(self.image)
 
@@ -380,20 +436,33 @@ class Display:
         if index == self.track_index:
             return
 
-        log(INFO, 'Display set track: {}'.format(index))
+        log(INFO, 'Display set track: {}'.format(self.tracks[index]['name']))
+
+        self.__clear_right_panel__()
+
+        set_display_index = index - self.track_offset_index
+
+        self.drawer.rectangle((self.LEFT_PANEL_WIDTH   + self.HORIZONTAL_MARGIN - self.BIGGER_SELECTION_MARGIN ,
+                               self.BIGGER_LINE_HEIGHT + self.SMALLER_LINE_HEIGHT * set_display_index + self.SMALLER_SELECTION_MARGIN ,
+                               E_INK_SCREEN_HEIGHT     - self.BIGGER_SELECTION_MARGIN,
+                               self.BIGGER_LINE_HEIGHT + self.SMALLER_LINE_HEIGHT * (set_display_index + 1)),
+                               fill = 0)
+
+        self.__draw_tracks_text__(index)
 
         self.e_ink_screen.display_partial(self.image)
 
-        self.track_index = index
+        self.track_preset_index = index
+        self.track_index        = index
 
         return
 
     def __unset_tempo__(self):
 
-        self.drawer.rectangle((self.HORIZONTAL_MARGIN + self.tempo_text_width - self.SELECTION_MARGIN,
-                               self.BIGGER_LINE_HEIGHT * 3 + self.SELECTION_MARGIN,
-                               self.HORIZONTAL_MARGIN + self.tempo_text_width + self.tempo_value_width + self.SELECTION_MARGIN,
-                               self.BIGGER_LINE_HEIGHT * 4 - self.SELECTION_MARGIN),
+        self.drawer.rectangle((self.HORIZONTAL_MARGIN  + self.tempo_text_width + self.HORIZONTAL_MARGIN - self.BIGGER_SELECTION_MARGIN,
+                               self.BIGGER_LINE_HEIGHT * 3 + self.BIGGER_SELECTION_MARGIN,
+                               self.HORIZONTAL_MARGIN  + self.tempo_text_width + self.tempo_value_width + self.HORIZONTAL_MARGIN + self.BIGGER_SELECTION_MARGIN,
+                               self.BIGGER_LINE_HEIGHT * 4 - self.BIGGER_SELECTION_MARGIN),
                                fill = 255)
 
         return
@@ -407,10 +476,10 @@ class Display:
 
         self.__unset_tempo__()
 
-        self.drawer.rectangle((self.HORIZONTAL_MARGIN + self.tempo_text_width + self.HORIZONTAL_MARGIN - self.SELECTION_MARGIN,
-                               self.BIGGER_LINE_HEIGHT * 3 + self.SELECTION_MARGIN,
-                               self.HORIZONTAL_MARGIN + self.tempo_text_width + self.tempo_value_width + self.HORIZONTAL_MARGIN + self.SELECTION_MARGIN,
-                               self.BIGGER_LINE_HEIGHT * 4 - self.SELECTION_MARGIN),
+        self.drawer.rectangle((self.HORIZONTAL_MARGIN  + self.tempo_text_width + self.HORIZONTAL_MARGIN - self.BIGGER_SELECTION_MARGIN,
+                               self.BIGGER_LINE_HEIGHT * 3 + self.BIGGER_SELECTION_MARGIN,
+                               self.HORIZONTAL_MARGIN  + self.tempo_text_width + self.tempo_value_width + self.HORIZONTAL_MARGIN + self.BIGGER_SELECTION_MARGIN,
+                               self.BIGGER_LINE_HEIGHT * 4 - self.BIGGER_SELECTION_MARGIN),
                                outline = 0)
 
         self.__draw_tempo_value__(tempo)
@@ -428,11 +497,7 @@ class Display:
 
         log(INFO, 'Display set tempo: {}'.format(tempo))
 
-        self.drawer.rectangle((self.HORIZONTAL_MARGIN + self.tempo_text_width + self.HORIZONTAL_MARGIN - self.SELECTION_MARGIN,
-                               self.BIGGER_LINE_HEIGHT * 3 + self.SELECTION_MARGIN,
-                               self.HORIZONTAL_MARGIN + self.tempo_text_width + self.tempo_value_width + self.HORIZONTAL_MARGIN + self.SELECTION_MARGIN,
-                               self.BIGGER_LINE_HEIGHT * 4 - self.SELECTION_MARGIN),
-                               fill = 255)
+        self.__unset_tempo__()
 
         self.__draw_tempo_value__(tempo)
 

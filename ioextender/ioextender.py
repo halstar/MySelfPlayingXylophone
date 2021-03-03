@@ -28,7 +28,7 @@ class IoExtender:
 
         self.i2c_device = i2c.I2cDevice(bus, address)
 
-        log(INFO, 'Setup IO extender #{}:{}'.format(bus, address))
+        log(INFO, 'Setup IO extender @{}:{}'.format(bus, address))
 
         # Configure all IOs as output, regular polarity
         self.i2c_device.write_byte(IoExtender.MCP_23017_IODIRA, 0x00)
@@ -58,7 +58,7 @@ class IoExtender:
 
     def write_io(self, pin, value):
 
-        log(DEBUG, 'Writing IO #{}@{}'.format(pin, value))
+        log(DEBUG, 'Writing IO on extender @{}/{}: {}/{}'.format(self.bus, self.address, pin, value))
 
         if not 0 <= pin <= IoExtender.IOS_COUNT - 1:
 
@@ -81,7 +81,7 @@ class IoExtender:
 
     def write_ios(self, pins_values):
 
-        log(DEBUG, 'Writing IOs: {}'.format(pins_values))
+        log(DEBUG, 'Writing IOs on extender @{}/{}: {}'.format(self.bus, self.address, pins_values))
 
         for pin_value in pins_values:
 
@@ -117,7 +117,7 @@ class IoExtender:
 
     def shutdown(self):
 
-        log(INFO, 'Shutting down IO extender #{}:{}'.format(self.bus, self.address))
+        log(INFO, 'Shutting down IO extender @{}/{}'.format(self.bus, self.address))
 
         # Turn off all output
         self.i2c_device.write_byte(IoExtender.MCP_23017_OLATA, 0x00)

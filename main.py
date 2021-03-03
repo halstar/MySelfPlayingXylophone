@@ -29,6 +29,7 @@ def print_help():
     print('Print MIDI file details by index : d=3')
     print('')
     print('Play a single note             : n=60')
+    print('Change file playing tempo      : t=90')
     print('Start playing file by index    : p=2')
     print('Stop  playing file (interrupt) : s')
     print('')
@@ -105,9 +106,11 @@ def console_thread(midi_reader, main_controller):
             elif command == 'd':
                 midi_reader.print_file_details(int(value))
             elif command == 'n':
-                main_controller.play_note(int(value))
+                main_controller.play_note_from_console(int(value))
+            elif command == 't':
+                main_controller.set_tempo_from_console(int(value))
             elif command == 'p':
-                main_controller.play_track_by_index(int(value))
+                main_controller.play_track_from_console(int(value))
             elif command == 'g':
                 control.note_length = int(value) / 1000.0
                 print('Changing note length to {} ms'.format(int(value)))
@@ -145,7 +148,8 @@ def main():
     log(INFO, 'Main >>>>>> setting up MIDI files')
 
     # Setup MIDI files
-    midi_reader = midireader.MidiReader(setup_data['MIDI_MUSIC_DIR'])
+    midi_reader  = midireader.MidiReader(setup_data['MIDI_MUSIC_DIR'])
+    tracks_count = midi_reader.get_files_count()
 
     log(INFO, 'Main >>>>>> initiating HW parts')
 
@@ -157,7 +161,7 @@ def main():
 
     # Setup control buttons
     mode_button      = rotarybutton.RotaryStatesButton('MODE' , control.gpio_interface, MODE_BUTTON_PIN_1 , MODE_BUTTON_PIN_2 , MODE_BUTTON_PIN_PRESS , [MODE.LOOP_ONE_TRACK, MODE.PLAY_ALL_TRACKS, MODE.PLAY_ONE_TRACK, MODE.STOP], True)
-    track_button     = rotarybutton.RotaryButton      ('TRACK', control.gpio_interface, TRACK_BUTTON_PIN_1, TRACK_BUTTON_PIN_2, TRACK_BUTTON_PIN_PRESS)
+    track_button     = rotarybutton.RotaryStatesButton('TRACK', control.gpio_interface, TRACK_BUTTON_PIN_1, TRACK_BUTTON_PIN_2, TRACK_BUTTON_PIN_PRESS, [i for i in range(0, tracks_count)], False)
     tempo_button     = rotarybutton.RotaryStatesButton('TEMPO', control.gpio_interface, TEMPO_BUTTON_PIN_1, TEMPO_BUTTON_PIN_2, TEMPO_BUTTON_PIN_PRESS, TEMPO_LIST, False)
     io_extender_low  = ioextender.IoExtender          (setup_data['I2C_BUS_NUMBER'], setup_data['MCP_23017_I2C_ADDRESS_1'])
     io_extender_high = ioextender.IoExtender          (setup_data['I2C_BUS_NUMBER'], setup_data['MCP_23017_I2C_ADDRESS_2'])
@@ -166,8 +170,8 @@ def main():
     log(INFO, 'Main >>>>>> setting xylophone')
 
     # Setup actual xylophone and highest level controllers
-    xylophone_device  = xylophone.Xylophone  (setup_data['XYLOPHONE_LOWEST_NOTE'], setup_data['XYLOPHONE_NOTES_COUNT'], io_extender_low, io_extender_high)
-    # xylophone_device = xylophone.Xylophone(setup_data['XYLOPHONE_LOWEST_NOTE'], setup_data['XYLOPHONE_NOTES_COUNT'], None, None)
+    xylophone_device  = xylophone.Xylophone  (setup_data['XYLOPHONE_LOWEST_NOTE'], setup_data['XYLOPHONE_NOTES_COUNT'], setup_data['XYLOPHONE_MAX_SIM_NOTES'], io_extender_low, io_extender_high)
+    # xylophone_device = xylophone.Xylophone(setup_data['XYLOPHONE_LOWEST_NOTE'], setup_data['XYLOPHONE_NOTES_COUNT'], setup_data['XYLOPHONE_MAX_SIM_NOTES'], None, None)
     display_interface = display.Display(e_ink_screen, midi_reader)
     main_controller   = controller.Controller(mode_button, track_button, tempo_button, midi_reader, xylophone_device, display_interface)
 

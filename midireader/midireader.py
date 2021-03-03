@@ -2,8 +2,8 @@ import os
 import utils
 
 from mido import MidiFile, tempo2bpm
-from log import *
-
+from log     import *
+from globals import *
 
 class MidiReader:
 
@@ -38,7 +38,7 @@ class MidiReader:
 
                 elif tempo == 0:
 
-                    log(WARNING, 'Dropping {}, as no tempo was found'.format(filename))
+                    log(WARNING, 'Dropping {}, as no valid tempo was found'.format(filename))
 
                 elif len(events) == 0:
 
@@ -51,7 +51,7 @@ class MidiReader:
                     file_data['name'       ] = filename
                     file_data['tempo'      ] = tempo
                     file_data['length'     ] = length
-                    file_data['events'      ] = events
+                    file_data['events'     ] = events
                     file_data['notes_count'] = len(events)
 
                     log(DEBUG, 'Registered file #{}: {}'.format(self.files_count, filename))
@@ -66,15 +66,40 @@ class MidiReader:
     @staticmethod
     def __get_tempo__(file_data):
 
+        raw_tempo = 0
+
         for track_index, track_data in enumerate(file_data.tracks):
 
             for msg in track_data:
 
+                if raw_tempo != 0:
+                    break
+
                 if msg.is_meta == True and msg.type == 'set_tempo':
 
-                    return int(tempo2bpm(msg.tempo))
+                    raw_tempo = int(tempo2bpm(msg.tempo))
+                    break
 
-        return 0
+        if (raw_tempo == 0) or (raw_tempo < TEMPO_LIST[0]) or (raw_tempo > TEMPO_LIST[-1]):
+
+            tempo = 0
+
+        else:
+
+            for allowed_tempo in TEMPO_LIST:
+
+                # Retrurn tempo value if found in list or round to the first closest/lower allowed value
+                if (allowed_tempo == raw_tempo) or (allowed_tempo > raw_tempo):
+
+                    tempo = allowed_tempo
+                    break
+
+                else:
+
+                    # Just move on to next tempo value in list
+                    pass
+
+        return tempo
 
     @staticmethod
     def __get_events__(file_data):
@@ -135,6 +160,11 @@ class MidiReader:
                 # Nothing to do
                 pass
 
+        # Post process events to order notes ascending
+        for event in events:
+            if event['type'] == MidiReader.NOTES:
+                event['value'].sort()
+
         return events
 
     def get_files_count(self):
@@ -151,6 +181,17 @@ class MidiReader:
         else:
 
             return self.files[index]['name'], self.files[index]['tempo'], self.files[index]['length']
+
+    def get_file_tempo(self, index):
+
+        if not 0 <= index < self.files_count:
+
+            log(ERROR, 'Cannot get MIDI file tempo; out of range index: {}'.format(index))
+            return None
+
+        else:
+
+            return self.files[index]['tempo']
 
     def start_playing_file(self, index):
 
