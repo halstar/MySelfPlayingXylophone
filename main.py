@@ -14,6 +14,7 @@ import controller
 
 from globals import *
 from log     import *
+from utils   import *
 
 setup_data       = None
 io_extender_low  = None
@@ -28,6 +29,7 @@ def print_help():
     print('Print MIDI file info    by index : i=2')
     print('Print MIDI file details by index : d=3')
     print('')
+    print('Play welcome sound             : w')
     print('Play a single note             : n=60')
     print('Change file playing tempo      : t=90')
     print('Start playing file by index    : p=2')
@@ -66,12 +68,15 @@ def console_thread(midi_reader, main_controller):
                 midi_reader.print_status()
             elif command == 's':
                 main_controller.stop_track()
+            elif command == 'w':
+                main_controller.play_welcome_sound()
             elif command == 'q':
                 print('')
                 print('***** GOING TO OPERATIONAL MODE *****')
                 is_console_on = False
             elif command == 'x':
                 print('***** EXITING GRACEFULLY *****')
+
                 graceful_exit(0)
             elif command == 'h':
                 print_help()
@@ -134,9 +139,18 @@ def main():
 
     if setup_data['START_CONSOLE'] == 1:
         os.system('clear')
+
         print('')
         print('***** STARTING MY SELF PLAYING XYLOPHONE CONTROL *****')
-        print('')
+        print('                                                      ')
+        print('    |\                                                ')
+        print(' |--|/------------------|\-------------------- - /|-- ')
+        print(' |--|---4---------------|\\\\------------------|/--_|--')
+        print(' |-/|.-------|~~~~|----_|-\|-----|~~~~|------|--(_)-- ')
+        print(' |(-|-)-4---_|---_|---(_)--|----_|---_|----(_)------- ')
+        print(' |-`|\'-----(_)--(_)-------_|---(_)--(_)--------------')
+        print('   \|                    (_)                          ')
+        print('                                                      ')
 
     if setup_data['START_CONSOLE'] == 1:
         print('********   CURRENTLY RUNNING IN CONSOLE MODE   *******')
@@ -145,13 +159,27 @@ def main():
 
     print('')
 
+    log(INFO, 'Main >>>>>> setting up display')
+    log(INFO, '')
+
+    e_ink_screen      = einkscreen.EInkScreen(setup_data['SPI_BUS_NUMBER'], setup_data['E_INK_SPI_ADDRESS'])
+    display_interface = display.Display(e_ink_screen)
+    display_interface.draw_init()
+
+    log(INFO, '')
     log(INFO, 'Main >>>>>> setting up MIDI files')
+    log(INFO, '')
 
     # Setup MIDI files
     midi_reader  = midireader.MidiReader(setup_data['MIDI_MUSIC_DIR'])
     tracks_count = midi_reader.get_files_count()
 
-    log(INFO, 'Main >>>>>> initiating HW parts')
+    # Provide MIDI reader reference to display (used to show up tracks)
+    display_interface.register_midi_reader(midi_reader)
+
+    log(INFO, '')
+    log(INFO, 'Main >>>>>> initiating other HW parts')
+    log(INFO, '')
 
     # Check if required PI GPIO daemon is started
     if (control.gpio_interface == USE_PI_GPIO) and (not utils.is_process_running('pigpiod')):
@@ -165,14 +193,17 @@ def main():
     tempo_button     = rotarybutton.RotaryStatesButton('TEMPO', control.gpio_interface, TEMPO_BUTTON_PIN_1, TEMPO_BUTTON_PIN_2, TEMPO_BUTTON_PIN_PRESS, TEMPO_LIST, False)
     io_extender_low  = ioextender.IoExtender          (setup_data['I2C_BUS_NUMBER'], setup_data['MCP_23017_I2C_ADDRESS_1'])
     io_extender_high = ioextender.IoExtender          (setup_data['I2C_BUS_NUMBER'], setup_data['MCP_23017_I2C_ADDRESS_2'])
-    e_ink_screen     = einkscreen.EInkScreen          (setup_data['SPI_BUS_NUMBER'], setup_data['E_INK_SPI_ADDRESS'])
 
-    log(INFO, 'Main >>>>>> setting xylophone')
+    log(INFO, '')
+    log(INFO, 'Main >>>>>> setting up xylophone')
+    log(INFO, '')
+
+    # Update display with operational interface
+    display_interface.draw_oper()
 
     # Setup actual xylophone and highest level controllers
     xylophone_device  = xylophone.Xylophone  (setup_data['XYLOPHONE_LOWEST_NOTE'], setup_data['XYLOPHONE_NOTES_COUNT'], setup_data['XYLOPHONE_MAX_SIM_NOTES'], io_extender_low, io_extender_high)
     # xylophone_device = xylophone.Xylophone(setup_data['XYLOPHONE_LOWEST_NOTE'], setup_data['XYLOPHONE_NOTES_COUNT'], setup_data['XYLOPHONE_MAX_SIM_NOTES'], None, None)
-    display_interface = display.Display(e_ink_screen, midi_reader)
     main_controller   = controller.Controller(mode_button, track_button, tempo_button, midi_reader, xylophone_device, display_interface)
 
     controller_buttons_reader = threading.Thread(target = main_controller.buttons_reader_thread, name='controller_buttons_reader', args = [])
@@ -181,6 +212,14 @@ def main():
     controller_file_player = threading.Thread(target = main_controller.file_player_thread, name='controller_file_player', args = [])
     controller_file_player.start()
 
+    log(INFO, '')
+    log(INFO, 'Main >>>>>> playing welcome sound')
+    log(INFO, '')
+
+    # Play hidden/embedded welcome sound
+    main_controller.play_welcome_sound()
+
+    log(INFO, '')
     log(INFO, 'Main >>>>>> starting console')
 
     if setup_data['START_CONSOLE'] == 1:

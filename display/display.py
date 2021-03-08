@@ -2,6 +2,7 @@ import os
 import math
 
 from log     import *
+from utils   import *
 from globals import *
 
 from PIL import Image, ImageDraw, ImageFont
@@ -32,12 +33,12 @@ class Display:
     STOP_TEXT       = 'Stop'
     TEMPO_TEXT      = 'Tempo: '
 
-    def __init__(self, e_ink_screen, midi_reader):
+    def __init__(self, e_ink_screen):
 
         log(INFO, 'Setting up Display class')
 
         self.e_ink_screen = e_ink_screen
-        self.midi_reader  = midi_reader
+        self.midi_reader  = None
 
         self.mode               = None
         self.mode_preset        = None
@@ -46,26 +47,12 @@ class Display:
         self.track_offset_index = 0
         self.tempo              = None
         self.tempo_preset       = None
-        self.tracks_count       = self.midi_reader.get_files_count()
+        self.tracks_count       = 0
         self.tracks             = []
 
         self.title_vertical_offset        = math.ceil((self.BIGGER_LINE_HEIGHT  - self.TITLE_FONT_HEIGHT) / 2.0)
         self.bigger_text_vertical_offset  = math.ceil((self.BIGGER_LINE_HEIGHT  - self.TEXT_FONT_HEIGHT ) / 2.0)
         self.smaller_text_vertical_offset = math.ceil((self.SMALLER_LINE_HEIGHT - self.TEXT_FONT_HEIGHT ) / 2.0)
-
-        for track_index in range(0, self.tracks_count):
-
-            name, tempo, length = self.midi_reader.get_file_info(track_index)
-
-            name_without_ext, ext = os.path.splitext(name)
-
-            if len(name_without_ext) > self.TRACK_NAME_MAXIMUM_LENGTH:
-
-                name_without_ext = name_without_ext[:self.TRACK_NAME_MAXIMUM_LENGTH] + '...'
-
-            track = {'name' : name_without_ext, 'tempo' : tempo, 'length' : length}
-
-            self.tracks.append(track)
 
         self.title_font = ImageFont.truetype('display/display_font.ttc', self.TITLE_FONT_HEIGHT)
         self.text_font  = ImageFont.truetype('display/display_font.ttc', self.TEXT_FONT_HEIGHT )
@@ -80,63 +67,24 @@ class Display:
         self.tempo_text_width     , height = self.drawer.textsize(self.TEMPO_TEXT     , font = self.text_font)
         self.tempo_value_width    , height = self.drawer.textsize('123'               , font = self.text_font)
 
-        self.e_ink_screen.module_init()
+        return
 
-        # Draw a simple rectangle around screen
-        self.drawer.rectangle((0, 0, E_INK_SCREEN_HEIGHT - 1, E_INK_SCREEN_WIDTH - 1), outline = 0)
+    def register_midi_reader(self, midi_reader):
 
-        # Draw Main settings title
-        self.drawer.text((self.HORIZONTAL_MARGIN,
-                          self.title_vertical_offset),
-                          self.SETTINGS_TITLE,
-                          font = self.title_font,
-                          fill = 0)
+        self.midi_reader  = midi_reader
+        self.tracks_count = self.midi_reader.get_files_count()
 
-        # Initialize Mode drawing, with no selection
-        self.__draw_mode_text__(MODE.PLAY_ONE_TRACK , False)
-        self.__draw_mode_text__(MODE.PLAY_ALL_TRACKS, False)
-        self.__draw_mode_text__(MODE.LOOP_ONE_TRACK , False)
-        self.__draw_mode_text__(MODE.STOP           , False)
+        for track_index in range(0, self.tracks_count):
 
-        self.drawer.line((0,
-                          self.BIGGER_LINE_HEIGHT * 3,
-                          self.LEFT_PANEL_WIDTH,
-                          self.BIGGER_LINE_HEIGHT * 3),
-                          fill = 0)
+            name, tempo, length = self.midi_reader.get_file_info(track_index)
 
-        # Initialize Tempo drawing, with no value
-        self.drawer.text((self.HORIZONTAL_MARGIN,
-                          self.BIGGER_LINE_HEIGHT * 3 + self.bigger_text_vertical_offset),
-                          self.TEMPO_TEXT,
-                          font = self.text_font,
-                          fill = 0)
+            name_without_ext, ext = os.path.splitext(name)
 
-        self.drawer.line((self.LEFT_PANEL_WIDTH,
-                          0,
-                          self.LEFT_PANEL_WIDTH,
-                          E_INK_SCREEN_WIDTH - 1),
-                          fill = 0)
+            name_without_ext = truncate_and_format_string(name_without_ext, self.TRACK_NAME_MAXIMUM_LENGTH)
 
-        # Draw Track selection title
-        self.drawer.text((self.LEFT_PANEL_WIDTH + self.HORIZONTAL_MARGIN,
-                          self.title_vertical_offset),
-                          self.TRACKS_TITLE,
-                          font = self.title_font,
-                          fill = 0)
+            track = {'name' : name_without_ext, 'tempo' : tempo, 'length' : length}
 
-        # Draw a line under both titles
-        self.drawer.line((0,
-                          self.BIGGER_LINE_HEIGHT,
-                          E_INK_SCREEN_HEIGHT - 1,
-                          self.BIGGER_LINE_HEIGHT),
-                          fill = 0)
-
-        e_ink_screen.display_base(self.image)
-
-        # Setup mode, tracks  and tempo with initial values
-        self.set_mode (DEFAULT_MODE )
-        self.set_track(DEFAULT_TRACK)
-        self.set_tempo(self.midi_reader.get_file_tempo(DEFAULT_TRACK))
+            self.tracks.append(track)
 
         return
 
@@ -505,5 +453,77 @@ class Display:
 
         self.tempo_preset = tempo
         self.tempo        = tempo
+
+        return
+
+    def draw_init(self):
+
+        self.e_ink_screen.module_init()
+
+        bmp_image = Image.open('display/xylo.bmp')
+
+        self.e_ink_screen.display(bmp_image)
+
+        return
+
+    def draw_oper(self):
+
+        self.e_ink_screen.module_init()
+
+        # Draw a simple rectangle around screen
+        self.drawer.rectangle((0, 0, E_INK_SCREEN_HEIGHT - 1, E_INK_SCREEN_WIDTH - 1), outline = 0)
+
+        # Draw Main settings title
+        self.drawer.text((self.HORIZONTAL_MARGIN,
+                          self.title_vertical_offset),
+                          self.SETTINGS_TITLE,
+                          font = self.title_font,
+                          fill = 0)
+
+        # Initialize Mode drawing, with no selection
+        self.__draw_mode_text__(MODE.PLAY_ONE_TRACK , False)
+        self.__draw_mode_text__(MODE.PLAY_ALL_TRACKS, False)
+        self.__draw_mode_text__(MODE.LOOP_ONE_TRACK , False)
+        self.__draw_mode_text__(MODE.STOP           , False)
+
+        self.drawer.line((0,
+                          self.BIGGER_LINE_HEIGHT * 3,
+                          self.LEFT_PANEL_WIDTH,
+                          self.BIGGER_LINE_HEIGHT * 3),
+                          fill = 0)
+
+        # Initialize Tempo drawing, with no value
+        self.drawer.text((self.HORIZONTAL_MARGIN,
+                          self.BIGGER_LINE_HEIGHT * 3 + self.bigger_text_vertical_offset),
+                          self.TEMPO_TEXT,
+                          font = self.text_font,
+                          fill = 0)
+
+        self.drawer.line((self.LEFT_PANEL_WIDTH,
+                          0,
+                          self.LEFT_PANEL_WIDTH,
+                          E_INK_SCREEN_WIDTH - 1),
+                          fill = 0)
+
+        # Draw Track selection title
+        self.drawer.text((self.LEFT_PANEL_WIDTH + self.HORIZONTAL_MARGIN,
+                          self.title_vertical_offset),
+                          self.TRACKS_TITLE,
+                          font = self.title_font,
+                          fill = 0)
+
+        # Draw a line under both titles
+        self.drawer.line((0,
+                          self.BIGGER_LINE_HEIGHT,
+                          E_INK_SCREEN_HEIGHT - 1,
+                          self.BIGGER_LINE_HEIGHT),
+                          fill = 0)
+
+        self.e_ink_screen.display_base(self.image)
+
+        # Setup mode, tracks  and tempo with initial values
+        self.set_mode (DEFAULT_MODE )
+        self.set_track(DEFAULT_TRACK)
+        self.set_tempo(self.midi_reader.get_file_tempo(DEFAULT_TRACK))
 
         return

@@ -11,7 +11,7 @@ from optparse import OptionParser
 from log      import *
 
 VERSION          = '1.0'
-UPDATE_DATE      = '2021-02-03'
+UPDATE_DATE      = '2021-03-05'
 VERSION_STRING   = '%%prog v%s (%s)' % (VERSION, UPDATE_DATE)
 USAGE            = 'usage: %prog [-h] [--verbose=INT] --spi-address=INT [--draw-portrait] [--draw-landscape] [--draw-full-bmp] [--draw-window-bmp] [--draw-partial-update]'
 LONG_DESCRIPTION = 'This program makes possible to easily test the E-ink screen class. ' \
@@ -22,10 +22,6 @@ DEFAULT_LOG_LEVEL = DEBUG
 
 # Minimum required version of Python interpreter
 REQUIRED_PYTHON_VERSION = 3
-
-# Supported commands
-EMPTY_COMMAND = ''
-QUIT_COMMAND  = 'q'
 
 # Other constants
 SPI_BUS_NUMBER      = 0
@@ -205,7 +201,7 @@ def main():
         log(INFO, "Drawing with a window bitmap image")
 
         bmp_image  = Image.new('1', (E_INK_SCREEN_HEIGHT, E_INK_SCREEN_WIDTH), 255)
-        bmp_window = Image.open('e_ink_screen_window.bmp')
+        bmp_window = Image.open('e_ink_screen_window_2.bmp')
         bmp_image.paste(bmp_window, (50, 10))
         e_ink_screen.display(bmp_image)
         time.sleep(3)

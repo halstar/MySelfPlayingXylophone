@@ -1,13 +1,17 @@
-=> Deal with tempo changes,
+=> Review xylophone's lowest note as it seems to "high" (?!)
+=> Finalize MIDI files analyzer/sorter/transposer:
+   -> Write output/simplified/cut files with MIDO,
+   -> Give a try on test files,
+   -> Write transposed files,
+   -> Check those files with a PC player,
+   -> Add color in console output,
+   -> Check for error & try to fix them, to get more positive files,
+   -> Give a try with a bunch of files from another source.
+
+=> Add couple more commands in console,
+=> Finalize welcome screen & welcome music
 
 => Turn SPI to max speed? 1MHz?
-
-=> Create introduction/jingle MIDI file & play it automatically at system startup,
-=> Create introduction display & show it up while MIDI file are being loaded, 
-
-=> Initiate MIDI files analyzer/sorter/transposer: share parts with embedded program?
-=> Add couple more commands in console,
-=> Add ASCII art xylo in console.
 
 => Display: add like scroll bar arrows in track selection part?
 => Display: add play/pause status indicator?
@@ -17,14 +21,21 @@ List of track that could be included:
 
 => Velvet Underground / Sunday morning
 => Bach / Ode à la joie
+=> Ravel / Bolero
 => French Cancan 
 => Greenleaves
+=> Jingle bells
+=> Silent night
+=> We wish you a merry christmas
+=> Twinkle, twinkle, little star
 
 What could be done next?...
 
 * Add some code comments,
 * Add some robustness around,
+* Isolate console in its own module,
 * Implement a commands history in debug console,
+* Replace polling by callbacks (e.g. in encoders/buttons),
 * Integrate tools access in debug console, in order to have a single entry point?
 * Make I2C, SPI, etc. classes more generic, so that they could easily be reused by other projects.
 

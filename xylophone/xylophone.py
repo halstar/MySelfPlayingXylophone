@@ -57,6 +57,8 @@ class Xylophone:
 
             log(WARNING, 'Maximum allowed simultaneous notes passed; dropping notes: {}'.format(notes[self.max_simultaneous_notes:]))
 
+            # Drop the last notes in the list, that is the highest ones,
+            # the ones with the least expressive sound on a xylophone.
             notes = notes[:self.max_simultaneous_notes]
 
         for note in notes:

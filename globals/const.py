@@ -53,10 +53,6 @@ class MODE(Enum):
     LOOP_ONE_TRACK  = 2
     STOP            = 3
 
-# Different available tempos
-
-TEMPO_LIST = [40,  42,  44,  46,  48,  50,  52,  54,  56,  58,  60,  63,  66,  69,  72,  76,  80,  84,  88,  92,  96,  100,  104,  108,  112,  116,  120,  126,  132,  138,  144,  152,  160,  168,  176,  184,  192,  200]
-
 # Other, general purpose and detailed constants
 
 MAIN_LOOP_SLEEP_TIME = 0.01

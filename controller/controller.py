@@ -1,8 +1,8 @@
 import time
-import midireader
 
 from log     import *
 from globals import *
+from utils   import *
 
 
 class Controller:
@@ -10,6 +10,17 @@ class Controller:
     STATE_IDLE           = 0
     STATE_PLAYING_TRACK  = 1
     STATE_STOPPING_TRACK = 2
+
+    WELCOME_SOUND = [
+        {'type': IS_NOTES, 'value': [53]},
+        {'type': IS_PAUSE, 'value': 0.3 },
+        {'type': IS_NOTES, 'value': [54]},
+        {'type': IS_PAUSE, 'value': 0.3 },
+        {'type': IS_NOTES, 'value': [55]},
+        {'type': IS_PAUSE, 'value': 0.3 }
+    ]
+
+    WELCOME_SOUND_TEMPO = 60
 
     def __init__(self, mode_button, track_button, tempo_button, midi_reader, xylophone, display):
 
@@ -24,7 +35,8 @@ class Controller:
 
         self.mode        = DEFAULT_MODE
         self.track_index = DEFAULT_TRACK
-        self.track_tempo = midi_reader.get_file_tempo(DEFAULT_TRACK)
+        self.__set_track_tempo__(midi_reader.get_file_tempo(DEFAULT_TRACK))
+        self.__set_play_tempo__ (self.track_tempo)
 
         self.mode_button.set_state (self.mode       )
         self.track_button.set_state(self.track_index)
@@ -32,6 +44,55 @@ class Controller:
 
         self.tracks_count = midi_reader.get_files_count()
         self.state        = self.STATE_IDLE
+
+        return
+
+    def __set_track_tempo__(self, tempo):
+
+        self.track_tempo = tempo
+
+        return
+
+    def __set_play_tempo__(self, tempo):
+
+        self.play_tempo  = tempo
+        self.tempo_ratio = self.track_tempo / tempo
+
+        return
+
+    def __play_event__(self, event):
+
+        if event['type'] == IS_PAUSE:
+
+            pause_duration = event['value'] * self.tempo_ratio
+
+            log(DEBUG, 'Let\'s pause for: {} s'.format(pause_duration))
+
+            time.sleep(pause_duration)
+
+        else:
+
+            self.xylophone.play_notes(event['value'])
+
+        return
+
+    def play_welcome_sound(self):
+
+        log(INFO, 'Playing welcome sound')
+
+        # Save tempo of the currently selected track
+        saved_tempo = self.track_tempo
+
+        self.__set_track_tempo__(self.WELCOME_SOUND_TEMPO)
+        self.__set_play_tempo__ (self.WELCOME_SOUND_TEMPO)
+
+        for event in self.WELCOME_SOUND:
+
+            self.__play_event__(event)
+
+        # Restore saved tempo
+        self.__set_track_tempo__(saved_tempo)
+        self.__set_play_tempo__ (saved_tempo)
 
         return
 
@@ -52,9 +113,7 @@ class Controller:
         # Force track change to show up on display
         self.track_button.set_state(index)
 
-        # Force tempo change to play that file at its default pace
-        self.track_tempo = self.midi_reader.get_file_tempo(index)
-        self.tempo_button.set_state(self.track_tempo)
+        # Do not change play tempo as it could have a specific value from console
 
         # Force mode change to just play that file
         self.mode = MODE.PLAY_ONE_TRACK
@@ -76,7 +135,8 @@ class Controller:
     def set_tempo_from_console(self, tempo):
 
         # Force tempo change to show up on display
-        self.tempo_button.set_state(self.track_tempo)
+        self.__set_play_tempo__    (tempo)
+        self.tempo_button.set_state(tempo)
 
         # Sleep a bit to make sure that buttons reader thread had time to update
         time.sleep(MAIN_LOOP_SLEEP_TIME)
@@ -92,12 +152,12 @@ class Controller:
             # Deal with all 3 buttons position
             self.mode        = self.mode_button.get_state ()
             self.track_index = self.track_button.get_state()
-            self.track_tempo = self.tempo_button.get_state()
+            preset_tempo     = self.tempo_button.get_state()
 
             # Possibly update screen with possible new preset mode/track/tempo
             self.display.preset_mode (self.mode       )
             self.display.preset_track(self.track_index)
-            self.display.preset_tempo(self.track_tempo)
+            self.display.preset_tempo(preset_tempo    )
 
             # Deal with all 3 buttons click status
 
@@ -132,7 +192,8 @@ class Controller:
                 self.display.set_mode     (self.mode)
 
                 # Force tempo change to play that file at its default pace
-                self.track_tempo = self.midi_reader.get_file_tempo(self.track_index)
+                self.__set_track_tempo__   (self.midi_reader.get_file_tempo(self.track_index))
+                self.__set_play_tempo__    (self.track_tempo)
                 self.tempo_button.set_state(self.track_tempo)
                 self.display.set_tempo     (self.track_tempo)
 
@@ -144,7 +205,8 @@ class Controller:
 
             if self.tempo_button.was_clicked() == True:
 
-                self.display.set_tempo(self.track_tempo)
+                self.__set_play_tempo__(preset_tempo)
+                self.display.set_tempo (preset_tempo)
 
             time.sleep(MAIN_LOOP_SLEEP_TIME)
 
@@ -170,11 +232,7 @@ class Controller:
 
                     if is_done == False:
 
-                        if event['type'] == midireader.MidiReader.PAUSE:
-                            log(DEBUG, 'Lets pause for: {}'.format(event['value']))
-                            time.sleep(event['value'])
-                        else:
-                            self.xylophone.play_notes(event['value'])
+                        self.__play_event__(event)
 
                 # Stop file reading only if we actually started reading one
                 if start_status == True:
