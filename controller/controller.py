@@ -37,6 +37,7 @@ class Controller:
         self.track_index = DEFAULT_TRACK
         self.__set_track_tempo__(midi_reader.get_file_tempo(DEFAULT_TRACK))
         self.__set_play_tempo__ (self.track_tempo)
+        self.__set_tempo_ratio__()
 
         self.mode_button.set_state (self.mode       )
         self.track_button.set_state(self.track_index)
@@ -55,8 +56,13 @@ class Controller:
 
     def __set_play_tempo__(self, tempo):
 
-        self.play_tempo  = tempo
-        self.tempo_ratio = self.track_tempo / tempo
+        self.play_tempo = tempo
+
+        return
+
+    def __set_tempo_ratio__(self):
+
+        self.tempo_ratio = self.track_tempo / self.play_tempo
 
         return
 
@@ -85,6 +91,7 @@ class Controller:
 
         self.__set_track_tempo__(self.WELCOME_SOUND_TEMPO)
         self.__set_play_tempo__ (self.WELCOME_SOUND_TEMPO)
+        self.__set_tempo_ratio__()
 
         for event in self.WELCOME_SOUND:
 
@@ -93,6 +100,7 @@ class Controller:
         # Restore saved tempo
         self.__set_track_tempo__(saved_tempo)
         self.__set_play_tempo__ (saved_tempo)
+        self.__set_tempo_ratio__()
 
         return
 
@@ -113,7 +121,9 @@ class Controller:
         # Force track change to show up on display
         self.track_button.set_state(index)
 
+        self.__set_track_tempo__(self.midi_reader.get_file_tempo(index))
         # Do not change play tempo as it could have a specific value from console
+        self.__set_tempo_ratio__()
 
         # Force mode change to just play that file
         self.mode = MODE.PLAY_ONE_TRACK
@@ -136,6 +146,7 @@ class Controller:
 
         # Force tempo change to show up on display
         self.__set_play_tempo__    (tempo)
+        self.__set_tempo_ratio__   ()
         self.tempo_button.set_state(tempo)
 
         # Sleep a bit to make sure that buttons reader thread had time to update
@@ -194,6 +205,7 @@ class Controller:
                 # Force tempo change to play that file at its default pace
                 self.__set_track_tempo__   (self.midi_reader.get_file_tempo(self.track_index))
                 self.__set_play_tempo__    (self.track_tempo)
+                self.__set_tempo_ratio__   ()
                 self.tempo_button.set_state(self.track_tempo)
                 self.display.set_tempo     (self.track_tempo)
 
@@ -205,8 +217,9 @@ class Controller:
 
             if self.tempo_button.was_clicked() == True:
 
-                self.__set_play_tempo__(preset_tempo)
-                self.display.set_tempo (preset_tempo)
+                self.__set_play_tempo__ (preset_tempo)
+                self.__set_tempo_ratio__()
+                self.display.set_tempo  (preset_tempo)
 
             time.sleep(MAIN_LOOP_SLEEP_TIME)
 

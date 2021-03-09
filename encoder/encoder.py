@@ -1,8 +1,6 @@
 import RPi.GPIO
 import gpiozero
 import pigpio
-import utils
-import os
 
 from globals import *
 from log     import *

@@ -1,5 +1,4 @@
 import os
-import utils
 
 from mido  import MidiFile
 from log   import *
@@ -25,7 +24,7 @@ class MidiReader:
             for filename in filenames:
 
                 fullname = os.path.join(dirname, filename)
-                data     = MidiFile(fullname)
+                data     = MidiFile(fullname, clip = True)
                 tempo    = midi.get_midi_file_tempo (data)
                 events   = midi.get_midi_file_events(data)
                 length   = int(data.length)
@@ -207,7 +206,7 @@ class MidiReader:
 
             for event in file_data['events']:
 
-                if event['type'] ==  self.IS_PAUSE:
+                if event['type'] ==  IS_PAUSE:
 
                     print('\tPause: {}'.format(event['value']))
 
@@ -217,7 +216,7 @@ class MidiReader:
                     print('\tNotes: ', end='', flush=True)
 
                     for note in event['value']:
-                        print('{} '.format(utils.get_note_name_from_midi_number(note)), end='', flush=True)
+                        print('{} '.format(get_note_name_from_midi_number(note)), end='', flush=True)
 
                     print('')
 

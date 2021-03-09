@@ -3,7 +3,7 @@ from mido import tempo2bpm
 IS_PAUSE   = 0
 IS_NOTES   = 1
 NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
-TEMPO_LIST = [40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 63, 66, 69, 72, 76, 80, 84, 88, 92, 96, 100, 104, 108, 112,
+TEMPO_LIST = [30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 63, 66, 69, 72, 76, 80, 84, 88, 92, 96, 100, 104, 108, 112,
               116, 120, 126, 132, 138, 144, 152, 160, 168, 176, 184, 192, 200]
 
 
@@ -25,22 +25,27 @@ def get_midi_file_tempo(midi_file_data):
 
         for msg in track_data:
 
-            if raw_tempo != 0:
-                break
-
-            if msg.is_meta == True and msg.type == 'set_tempo':
+            if (msg.is_meta == True) and (msg.type == 'set_tempo') and (msg.tempo != 0):
                 raw_tempo = int(tempo2bpm(msg.tempo))
                 break
 
-    if (raw_tempo == 0) or (raw_tempo < TEMPO_LIST[0]) or (raw_tempo > TEMPO_LIST[-1]):
+    if raw_tempo == 0:
 
         tempo = 0
+
+    elif raw_tempo < TEMPO_LIST[0]:
+
+        tempo = TEMPO_LIST[0]
+
+    elif raw_tempo > TEMPO_LIST[-1]:
+
+        tempo = TEMPO_LIST[-1]
 
     else:
 
         for allowed_tempo in TEMPO_LIST:
 
-            # Retrurn tempo value if found in list or round to the first closest/lower allowed value
+            # Return tempo value if found in list or round to the first closest/lower allowed value
             if (allowed_tempo == raw_tempo) or (allowed_tempo > raw_tempo):
 
                 tempo = allowed_tempo
@@ -60,7 +65,7 @@ def get_midi_file_events(midi_file_data):
 
     for msg in midi_file_data:
 
-        if msg.is_meta == True:
+        if msg.time != 0:
 
             if len(events) != 0 and events[-1]['type'] == IS_PAUSE:
                 events[-1]['value'] += msg.time
@@ -68,52 +73,15 @@ def get_midi_file_events(midi_file_data):
                 events.append({'type' : IS_PAUSE,
                                'value': msg.time})
 
-        elif msg.type == 'note_on' or msg.type == 'note_off':
+        if msg.type == 'note_on' or msg.type == 'note_off':
 
-            if msg.velocity != 0 and msg.time == 0:
+            if msg.velocity != 0:
 
                 if len(events) != 0 and events[-1]['type'] == IS_NOTES:
                     events[-1]['value'].append(msg.note)
                 else:
                     events.append({'type' : IS_NOTES,
                                    'value': [msg.note]})
-
-            elif msg.velocity != 0 and msg.time != 0:
-
-                if len(events) != 0 and events[-1]['type'] == IS_PAUSE:
-                    events[-1]['value'] += msg.time
-                else:
-                    events.append({'type' : IS_PAUSE,
-                                   'value': msg.time})
-
-                events.append({'type' : IS_NOTES,
-                               'value': [msg.note]})
-
-            elif msg.velocity == 0 and msg.time != 0:
-
-                if len(events) != 0 and events[-1]['type'] == IS_PAUSE:
-                    events[-1]['value'] += msg.time
-                else:
-                    events.append({'type' : IS_PAUSE,
-                                   'value': msg.time})
-
-            elif msg.velocity == 0 and msg.time == 0:
-
-                # Nothing to do
-                pass
-
-        elif msg.time != 0:
-
-            if len(events) != 0 and events[-1]['type'] == IS_PAUSE:
-                events[-1]['value'] += msg.time
-            else:
-                events.append({'type' : IS_PAUSE,
-                               'value': msg.time})
-
-        else:
-
-            # Nothing to do
-            pass
 
     # Post process events
     for event in events:

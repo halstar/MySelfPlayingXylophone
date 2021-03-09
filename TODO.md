@@ -1,12 +1,7 @@
 => Review xylophone's lowest note as it seems to "high" (?!)
 => Finalize MIDI files analyzer/sorter/transposer:
-   -> Write output/simplified/cut files with MIDO,
-   -> Give a try on test files,
-   -> Write transposed files,
-   -> Check those files with a PC player,
+   -> Give a try with a bunch of files from another source,
    -> Add color in console output,
-   -> Check for error & try to fix them, to get more positive files,
-   -> Give a try with a bunch of files from another source.
 
 => Add couple more commands in console,
 => Finalize welcome screen & welcome music
@@ -28,6 +23,7 @@ List of track that could be included:
 => Silent night
 => We wish you a merry christmas
 => Twinkle, twinkle, little star
+=> Tracks from studies piano book
 
 What could be done next?...
 

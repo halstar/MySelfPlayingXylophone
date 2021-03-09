@@ -3,7 +3,6 @@ import os
 import threading
 import RPi.GPIO
 
-import utils
 import rotarybutton
 import midireader
 import ioextender
@@ -13,8 +12,8 @@ import display
 import controller
 
 from globals import *
-from log     import *
 from utils   import *
+from log     import *
 
 setup_data       = None
 io_extender_low  = None

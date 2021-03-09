@@ -1,9 +1,10 @@
-import utils
 import time
 import ioextender
 
 from log     import *
+from utils   import *
 from globals import *
+
 
 class Xylophone:
 
@@ -13,8 +14,8 @@ class Xylophone:
 
         highest_note = lowest_note + notes_count - 1
 
-        log(DEBUG, 'Lowest  note: {} ({})'.format(utils.get_note_name_from_midi_number(lowest_note ), lowest_note ))
-        log(DEBUG, 'Highest note: {} ({})'.format(utils.get_note_name_from_midi_number(highest_note), highest_note))
+        log(DEBUG, 'Lowest  note: {} ({})'.format(get_note_name_from_midi_number(lowest_note ), lowest_note ))
+        log(DEBUG, 'Highest note: {} ({})'.format(get_note_name_from_midi_number(highest_note), highest_note))
 
         self.lowest_note            = lowest_note
         self.highest_note           = highest_note
