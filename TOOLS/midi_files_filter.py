@@ -24,9 +24,13 @@ DEFAULT_MIN_LENGTH = 10
 
 # Other constants
 STATUS_FILENAME_LENGTH      = 16
-OUTPUT_MIDI_FILE_TYPE       = 1
-OUTPUT_MIDI_FILE_INSTRUMENT = 0
+OUTPUT_MIDI_FILE_TYPE       =  1
+OUTPUT_MIDI_FILE_INSTRUMENT =  9
 OUTPUT_MIDI_FILE_VELOCITY   = 64
+
+COLOR_RED   = '\033[31m'
+COLOR_GREEN = '\033[32m'
+COLOR_END   = '\033[0m'
 
 # Minimum required version of Python interpreter
 REQUIRED_PYTHON_VERSION = 3
@@ -219,14 +223,28 @@ def main():
 
     if opts.src_file:
 
+        is_status_ok = True
+
         fullname_with_ext         = opts.src_file
         filename_with_ext         = os.path.basename(fullname_with_ext)
         filename_without_ext, ext = os.path.splitext(filename_with_ext)
 
-        input_midi_data  = MidiFile(fullname_with_ext, clip = True)
-        output_midi_data = MidiFile(type = OUTPUT_MIDI_FILE_TYPE)
+        try:
 
-        is_status_ok, msg_count, transpose_offset = analyze_file(input_midi_data, filename_without_ext, criteria, output_midi_data)
+            input_midi_data = MidiFile(fullname_with_ext, clip = True)
+
+        except Exception as error:
+
+            is_status_ok = False
+
+            log(WARNING, 'Could not load {}; file might be corrupt'.format(fullname_with_ext))
+            log(WARNING, error)
+
+        output_midi_data = MidiFile(type = OUTPUT_MIDI_FILE_TYPE, clip = True)
+
+        if is_status_ok:
+
+            is_status_ok, msg_count, transpose_offset = analyze_file(input_midi_data, filename_without_ext, criteria, output_midi_data)
 
         if is_status_ok and not opts.is_dry_run:
 
@@ -244,13 +262,27 @@ def main():
 
             for filename_with_ext in filenames:
 
+                is_status_ok = True
+
                 fullname_with_ext         = os.path.join    (dirname, filename_with_ext)
                 filename_without_ext, ext = os.path.splitext(filename_with_ext         )
 
-                input_midi_data  = MidiFile(fullname_with_ext, clip = True)
-                output_midi_data = MidiFile(type = OUTPUT_MIDI_FILE_TYPE)
+                try:
 
-                is_status_ok, msg_count, transpose_offset = analyze_file(input_midi_data, filename_without_ext, criteria, output_midi_data)
+                    input_midi_data = MidiFile(fullname_with_ext, clip = True)
+
+                except Exception as error:
+
+                    is_status_ok = False
+
+                    log(WARNING, 'Could not load {}; file might be corrupt'.format(fullname_with_ext))
+                    log(WARNING, error)
+
+                output_midi_data = MidiFile(type = OUTPUT_MIDI_FILE_TYPE, clip = True)
+
+                if is_status_ok:
+
+                    is_status_ok, msg_count, transpose_offset = analyze_file(input_midi_data, filename_without_ext, criteria, output_midi_data)
 
                 if is_status_ok and not opts.is_dry_run:
 
@@ -274,15 +306,16 @@ def main():
 
 def analyze_file(input_midi_data, input_filename, criteria, output_midi_data):
 
-    log(INFO, 'Analyzing input {}'.format(input_filename))
+    log(INFO, 'Analyzing input: {}'.format(input_filename))
 
     summed_length             = 0
     last_written_notes_time   = 0
     max_length_no_transpose   = 0
     max_length_with_transpose = 0
-    lowest_note               = 999
-    highest_note              = 0
+    lowest_note               = -1
+    highest_note              = -1
     transpose_offset          = 0
+    transpose_range           = 0
     msg_count                 = 0
     msg_count_no_transpose    = 0
     msg_count_with_transpose  = 0
@@ -292,15 +325,24 @@ def analyze_file(input_midi_data, input_filename, criteria, output_midi_data):
     is_max_sim_notes_passed     = False
     is_no_transpose_scan_done   = False
     is_with_transpose_scan_done = False
-    is_final_length_check_ok    = True
     is_expected_length_check_ok = True
     is_global_status_ok         = True
 
-    # Get necessary information from input MIDI data
-    tempo_in_bpm   = midi.get_midi_file_tempo         (input_midi_data       )
-    events         = midi.get_midi_file_events        (input_midi_data       )
-    file_length    =                               int(input_midi_data.length)
-    ticks_per_beat = midi.get_midi_file_ticks_per_beat(input_midi_data       )
+    # Get detailed necessary information from input MIDI data
+    try:
+
+        file_length    =                               int(input_midi_data.length)
+        tempo_in_bpm   = midi.get_midi_file_tempo         (input_midi_data)
+        events         = midi.get_midi_file_events        (input_midi_data)
+        ticks_per_beat = midi.get_midi_file_ticks_per_beat(input_midi_data)
+
+    except Exception as error:
+
+        is_format_ok = False
+        file_length  = 0
+
+        log(WARNING, 'Could not parse {}; file might be corrupt'.format(input_filename))
+        log(WARNING, error)
 
     # Prepare filtering based on length
     if criteria['min_length'] == 0:
@@ -311,26 +353,29 @@ def analyze_file(input_midi_data, input_filename, criteria, output_midi_data):
     file_length_string         = turn_seconds_int_to_minutes_and_seconds_string(file_length        )
     expected_min_length_string = turn_seconds_int_to_minutes_and_seconds_string(expected_min_length)
 
-    # Check general file format
-    if input_midi_data.type == 2:
+    # In case of a corrupt file, let's just stop with that fle
+    if is_format_ok:
 
-        log(WARNING, 'Unsupported MIDI file type 2')
-        is_format_ok = False
+        # Check general file format
+        if input_midi_data.type == 2:
 
-    if tempo_in_bpm == 0:
+            log(WARNING, 'Unsupported MIDI file type 2')
+            is_format_ok = False
 
-        log(WARNING, 'No valid tempo was found in file')
-        is_format_ok = False
+        if tempo_in_bpm == 0:
 
-    if len(events) == 0:
+            log(WARNING, 'No valid tempo was found in file')
+            is_format_ok = False
 
-        log(WARNING, 'No events were found in file!')
-        is_format_ok = False
+        if len(events) == 0:
 
-    if ticks_per_beat == 0:
+            log(WARNING, 'No events were found in file!')
+            is_format_ok = False
 
-        log(WARNING, 'No valid ticks per beat data was found in file')
-        is_format_ok = False
+        if ticks_per_beat == 0:
+
+            log(WARNING, 'No valid ticks per beat data was found in file')
+            is_format_ok = False
 
     # In case of a bad/unsupported format, let's just stop with that fle
     if is_format_ok:
@@ -383,7 +428,10 @@ def analyze_file(input_midi_data, input_filename, criteria, output_midi_data):
                 for note in notes:
 
                     # Memorize highest and lowest notes ever found from the start of that file; this is used to transpose
-                    if note < lowest_note:
+                    if lowest_note == -1:
+                        lowest_note  = note
+                        highest_note = note
+                    elif note < lowest_note:
                         lowest_note = note
                     elif note > highest_note:
                         highest_note = note
@@ -402,7 +450,7 @@ def analyze_file(input_midi_data, input_filename, criteria, output_midi_data):
 
                     if not(criteria['lowest_note'] <= note <= criteria['highest_note']):
 
-                        log(DEBUG, 'Note #{} out of range [{}-{}]'.format(note, criteria['lowest_note'], criteria['highest_note']))
+                        log(DEBUG, 'Note {} out of range [{}-{}]'.format(note, criteria['lowest_note'], criteria['highest_note']))
 
                         if not is_no_transpose_scan_done:
 
@@ -411,34 +459,28 @@ def analyze_file(input_midi_data, input_filename, criteria, output_midi_data):
 
                             log(INFO, 'Done with scan with no transpose - Got partial content')
 
-                        if not(highest_note - lowest_note + 1 <= criteria['num_notes']):
+                    if not(highest_note - lowest_note + 1 <= criteria['num_notes']):
 
-                            log(DEBUG, 'Note #{} out of range, even with transpose'.format(note))
+                        log(DEBUG, 'Note {} out of range, even with transpose'.format(note))
 
-                            if not is_with_transpose_scan_done:
+                        if not is_with_transpose_scan_done:
 
-                                is_with_transpose_scan_done = True
-                                msg_count_with_transpose    = msg_count
+                            is_with_transpose_scan_done = True
+                            msg_count_with_transpose    = msg_count
 
-                                log(INFO, 'Done with scan with    transpose - Got partial content')
-                                log(DEBUG, 'Transpose offset: {}'.format(transpose_offset))
+                            log(INFO, 'Done with scan with    transpose - Got partial content')
 
-                        else:
+                            # No need to analyze file any further
+                            break
 
-                            if not is_with_transpose_scan_done:
+                    else:
 
-                                # Compute transpose offset
-                                if lowest_note < criteria['lowest_note']:
-
-                                    transpose_offset = criteria['lowest_note'] - lowest_note
-
-                                else:
-
-                                    transpose_offset = -(criteria['lowest_note'] - lowest_note)
+                        # Compute output transpose offset and transpose_range, as long as note track range fits within available number of notes
+                        transpose_offset = criteria['lowest_note'] - lowest_note
+                        transpose_range  = highest_note - lowest_note + 1
 
                     output_track.append(Message('note_on' , note = note, velocity = OUTPUT_MIDI_FILE_VELOCITY, time = notes_delta_time_in_ticks))
-                    output_track.append(Message('note_off', note = note, velocity = OUTPUT_MIDI_FILE_VELOCITY, time = 0                        ))
-                    msg_count += 2
+                    msg_count += 1
 
                 last_written_notes_time = summed_length
 
@@ -455,60 +497,13 @@ def analyze_file(input_midi_data, input_filename, criteria, output_midi_data):
             msg_count_with_transpose = msg_count
 
             log(INFO, 'Done with scan with    transpose - Got full    content')
-            log(DEBUG, 'Transpose offset: {}'.format(transpose_offset))
 
-        # Check whether summed length is consistent with file embedded length
-        if not (file_length - 1 < summed_length < file_length + 1):
-
-            summed_length_string = turn_seconds_int_to_minutes_and_seconds_string(summed_length)
-
-            log(WARNING, 'Summed length, {}, differs from file embedded length, {}'.format(summed_length_string, file_length_string))
-            is_final_length_check_ok = False
-
-        log(DEBUG, 'Overall file range = [{}-{}]'.format(lowest_note, highest_note))
+        log(DEBUG, 'Scanned notes range = [{}-{}]'.format(lowest_note, highest_note))
 
         # Finalize output MIDI data
         output_midi_data.tracks.append(output_track)
 
-    # Print out a synthetic line per file, showing up analysis detailed status
-    print('{} - '.format(truncate_and_format_string(input_filename, STATUS_FILENAME_LENGTH)), end = '', flush = True)
-
-    print('Format: ', end = '', flush = True)
-
-    if is_format_ok:
-        print('OK', end = '', flush = True)
-    else:
-        print('KO', end = '', flush = True)
-
-    print(' - File length: {}'.format(file_length_string), end = '', flush = True)
-
-    print(' - Short file check: ', end = '', flush = True)
-
-    if not is_file_too_short:
-        print('OK', end = '', flush = True)
-    else:
-        print('KO', end = '', flush = True)
-
-    print(' - Max sim notes check: ', end = '', flush = True)
-
-    if not is_max_sim_notes_passed:
-        print('OK', end = '', flush = True)
-    else:
-        print('KO', end = '', flush = True)
-
-    max_length_no_transpose_string   = turn_seconds_int_to_minutes_and_seconds_string(max_length_no_transpose  )
-    max_length_with_transpose_string = turn_seconds_int_to_minutes_and_seconds_string(max_length_with_transpose)
-
-    print(' - Max length no transpose: {}'.format  (max_length_no_transpose_string  ), end = '', flush = True)
-    print(' - Max length with transpose: {}'.format(max_length_with_transpose_string), end = '', flush = True)
-
-    print(' - Final length check: ', end = '', flush = True)
-
-    if is_final_length_check_ok:
-        print('OK', end = '', flush = True)
-    else:
-        print('KO', end = '', flush = True)
-
+    # Check expected minimum length criteria
     if not criteria['do_transpose'] and max_length_no_transpose < expected_min_length:
 
         is_expected_length_check_ok = False
@@ -517,24 +512,74 @@ def analyze_file(input_midi_data, input_filename, criteria, output_midi_data):
 
         is_expected_length_check_ok = False
 
-    print(' - Expected length check: ', end = '', flush = True)
-
-    if is_expected_length_check_ok:
-        print('OK', end = '', flush = True)
-    else:
-        print('KO', end = '', flush = True)
-
-    if not is_format_ok or is_file_too_short or is_max_sim_notes_passed or not is_final_length_check_ok or not is_expected_length_check_ok:
+    # Compute final/global file status
+    if not is_format_ok or is_file_too_short or is_max_sim_notes_passed or not is_expected_length_check_ok:
 
         is_global_status_ok = False
 
-    print(' - Global status: ', end = '', flush = True)
-
+    # Print out a synthetic line per file, showing up analysis detailed status
     if is_global_status_ok:
-        print('OK', end = '', flush = True)
+        print(COLOR_GREEN, end = '', flush = True)
     else:
-        print('KO', end = '', flush = True)
+        print(COLOR_RED  , end = '', flush = True)
+
+    print('{}'.format(truncate_and_format_string(input_filename, STATUS_FILENAME_LENGTH)) + COLOR_END +  ' - ', end = '', flush = True)
+
+    if is_format_ok:
+        print('Format: OK', end = '', flush = True)
+    else:
+        print(COLOR_RED + 'Format: KO' + COLOR_END, end = '', flush = True)
+
+    print(' - File length: {} - '.format(file_length_string), end = '', flush = True)
+
+    if not is_file_too_short:
+        print('Short file check: OK', end = '', flush = True)
+    else:
+        print(COLOR_RED + 'Short file check: KO' + COLOR_END, end = '', flush = True)
+
+    print(' - ', end = '', flush = True)
+
+    if not is_max_sim_notes_passed:
+        print('Max sim notes check: OK', end = '', flush = True)
+    else:
+        print(COLOR_RED + 'Max sim notes check: KO' + COLOR_END, end = '', flush = True)
+
+    max_length_no_transpose_string   = turn_seconds_int_to_minutes_and_seconds_string(max_length_no_transpose  )
+    max_length_with_transpose_string = turn_seconds_int_to_minutes_and_seconds_string(max_length_with_transpose)
+
+    print(' - Max length no transpose: {}'.format     (max_length_no_transpose_string  ), end = '', flush = True)
+    print(' - Max length with transpose: {} - '.format(max_length_with_transpose_string), end = '', flush = True)
+
+    if is_expected_length_check_ok:
+        print('Expected length check: OK', end = '', flush = True)
+    else:
+        print(COLOR_RED + 'Expected length check: KO' + COLOR_END, end = '', flush = True)
+
     print('')
+
+    # Try some post-processings on transposition, for the sake of a good sound
+    if is_global_status_ok and criteria['do_transpose'] and (transpose_offset != 0):
+
+        log(INFO, 'Transpose range : {}'.format(transpose_range))
+        log(INFO, 'Transpose offset: {}'.format(transpose_offset))
+
+        align_lowest_note_offset = 12 - (criteria['lowest_note'] % 12) + (lowest_note % 12)
+
+        # Try and transpose by having the lowest note identical to the original, but on another
+        # octave, so that the transposition will actually sound much closer to the original.
+        if align_lowest_note_offset + transpose_range <= criteria['num_notes']:
+
+            print("Before fix ", lowest_note, highest_note, transpose_offset, align_lowest_note_offset)
+            transpose_offset += align_lowest_note_offset
+            log(INFO, "Could apply octave    correction on transpose offset, now: {}".format(transpose_offset))
+            print("After fix  ", transpose_offset, lowest_note + transpose_offset,  highest_note + transpose_offset,)
+
+        # If transpose offset is odd (i.e. a half-tone) and we got room to make it even (i.e. full tone),
+        # let's go for an even offset, by adding 1 half-tone: full tone transposition should sound better.
+        elif (transpose_offset % 2 != 0) and (transpose_range <= criteria['num_notes'] - 1):
+
+            transpose_offset += 1
+            log(INFO, "Could apply full tone correction on transpose offset, now: {}".format(transpose_offset))
 
     if not criteria['do_transpose']:
 
@@ -550,15 +595,21 @@ def write_output_file(output_midi_data, output_fullname, msg_count, transpose_of
     filename_with_ext         = os.path.basename(output_fullname)
     filename_without_ext, ext = os.path.splitext(filename_with_ext)
 
-    log(INFO, 'Writing   output {}'.format(filename_without_ext))
+    log(INFO, 'Writing   output: {}'.format(filename_without_ext))
 
     # If necessary, truncate last (out of range) messages in the single track we created
     del output_midi_data.tracks[0][msg_count:]
 
+    # Add an End of track message, some little time after the very last note
+    # (needed to hear this last note being played, while previewing on a local PC)
+    output_midi_data.tracks[0].append(MetaMessage('end_of_track', time = 100))
+
     # If necessary, transpose all notes in the single track we created
-    for msg in output_midi_data.tracks[0]:
-        if msg.type in ('note_on', 'note_off'):
-            msg.note += transpose_offset
+    if transpose_offset != 0:
+
+        for msg in output_midi_data.tracks[0]:
+            if msg.type in ['note_on']:
+                msg.note += transpose_offset
 
     # Actually save file
     output_midi_data.save(output_fullname)
@@ -573,7 +624,7 @@ def remove_input_file(input_fullname):
 
     log(INFO, 'Removing  input {}'.format(filename_without_ext))
 
-    os.remoce(input_fullname)
+    os.remove(input_fullname)
 
     return
 

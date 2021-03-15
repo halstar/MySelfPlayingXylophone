@@ -24,6 +24,8 @@ class Display:
 
     TRACK_NAME_MAXIMUM_LENGTH = 13
 
+    INIT_IMAGE = 'display/xylo.bmp'
+
     SETTINGS_TITLE  = 'Main settings'
     TRACKS_TITLE    = 'Track selection'
 
@@ -458,15 +460,19 @@ class Display:
 
     def draw_init(self):
 
+        log(INFO, 'Display draw initialization image: {}'.format(self.INIT_IMAGE))
+
         self.e_ink_screen.module_init()
 
-        bmp_image = Image.open('display/xylo.bmp')
+        bmp_image = Image.open(self.INIT_IMAGE)
 
         self.e_ink_screen.display(bmp_image)
 
         return
 
     def draw_oper(self):
+
+        log(INFO, 'Display going operational')
 
         self.e_ink_screen.module_init()
 

@@ -1,7 +1,7 @@
-=> Review xylophone's lowest note as it seems to "high" (?!)
-=> Finalize MIDI files analyzer/sorter/transposer:
-   -> Give a try with a bunch of files from another source,
-   -> Add color in console output,
+=> Remove E-ink screen module & dependencies,
+=> Cleanup/finalize test_lcd_screen,
+=> Wire main & display with LCD,
+=> Test LCD against Modes, etc.
 
 => Add couple more commands in console,
 => Finalize welcome screen & welcome music

@@ -216,17 +216,12 @@ def main():
         e_ink_screen.display_base(base_image)
 
         num = 0
+
         while True:
 
             drawer.rectangle((10, 10, 120, 50), fill = 255)
             drawer.text     ((10, 10), time.strftime('%H:%M:%S'), font = font24, fill = 0)
             e_ink_screen.display_partial(base_image)
-            time.sleep(5)
-            drawer.rectangle((10, 10, 120, 50), fill = 255)
-            drawer.text     ((10, 10), time.strftime('%H:%M:%S'), font = font24, fill = 0)
-            e_ink_screen.display_partial2(base_image)
-            time.sleep(5)
-            return 0
 
             num = num + 1
             if num == 5:

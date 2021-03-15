@@ -8,6 +8,8 @@ from globals import *
 
 class EInkScreen:
 
+    SPI_MAX_SPEED_IN_HZ = 4000000
+
     PARTIAL_DISPLAY_LUT = [
         0x0,0x40,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
         0x80,0x80,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
@@ -34,7 +36,7 @@ class EInkScreen:
 
         log(INFO, 'Setting up E-ink screen class')
 
-        self.spi_device = spi.SpiDevice(bus, address)
+        self.spi_device = spi.SpiDevice(bus, address, self.SPI_MAX_SPEED_IN_HZ)
 
         return
 
@@ -278,22 +280,6 @@ class EInkScreen:
             self.__send_data__(self.PARTIAL_DISPLAY_LUT[i])
         self.__read_busy__()
 
-        # self.__send_command__(0x37);
-        # self.__send_data__   (0x00);
-        # self.__send_data__   (0x00);
-        # self.__send_data__   (0x00);
-        # self.__send_data__   (0x00);
-        # self.__send_data__   (0x00);
-        # self.__send_data__   (0x40);
-        # self.__send_data__   (0x00);
-        # self.__send_data__   (0x00);
-        # self.__send_data__   (0x00);
-        # self.__send_data__   (0x00);
-
-        # BorderWavefrom
-        # self.__send_command__(0x3C);
-        # self.__send_data__   (0x80);
-
         # DISPLAY_UPDATE_CONTROL_2
         self.__send_command__(0x22);
         self.__send_data__   (0xC0);
@@ -301,9 +287,6 @@ class EInkScreen:
         # MASTER_ACTIVATION
         self.__send_command__(0x20);
         self.__read_busy__   ();
-
-        #self.__set_window__(0, 0, E_INK_SCREEN_WIDTH - 1, E_INK_SCREEN_HEIGHT - 1)
-        #self.__set_cursor__(0, 0)
 
         # WRITE_RAM
         self.__send_command__(0x24)
@@ -318,60 +301,9 @@ class EInkScreen:
 
         return
 
-    def display_partial2(self, image):
-
-        log(INFO, 'Display partial image')
-
-
-        # Sending LUT
-        self.__send_command__(0x32)
-        for i in range(0, len(self.PARTIAL_DISPLAY_LUT) - 1):
-            self.__send_data__(self.PARTIAL_DISPLAY_LUT[i])
-        self.__read_busy__()
-
-        # DISPLAY_UPDATE_CONTROL_2
-        self.__send_command__(0x22);
-        self.__send_data__   (0xC0);
-
-        # MASTER_ACTIVATION
-        self.__send_command__(0x20);
-        self.__read_busy__   ();
-
-        # Clear screen
-        self.__send_command__(0x24)
-        for j in range(0, E_INK_SCREEN_HEIGHT):
-            for i in range(0, int(E_INK_SCREEN_WIDTH / 8)):
-                self.__send_data__(0xFF)
-
-        self.__turn_on_display_partial__()
-
-        # Sending LUT
-        self.__send_command__(0x32)
-        for i in range(0, len(self.PARTIAL_DISPLAY_LUT) - 1):
-            self.__send_data__(self.PARTIAL_DISPLAY_LUT[i])
-        self.__read_busy__()
-
-        # DISPLAY_UPDATE_CONTROL_2
-        self.__send_command__(0x22);
-        self.__send_data__   (0xC0);
-
-        # MASTER_ACTIVATION
-        self.__send_command__(0x20);
-        self.__read_busy__   ();
-
-        image_buffer = self.__get_buffer__(image)
-
-        for j in range(0, E_INK_SCREEN_HEIGHT):
-            for i in range(0, int(E_INK_SCREEN_WIDTH / 8)):
-                self.__send_data__(image_buffer[i + j * int(E_INK_SCREEN_WIDTH / 8)])
-
-        self.__turn_on_display_partial__()
-
-        return
-
     def module_exit(self):
 
-        log(INFO, 'Shutting down up E-ink screen')
+        log(INFO, 'Shutting down E-ink screen')
 
         # Entering DEEP_SLEEP_MODE
         self.__send_command__(0x10)
