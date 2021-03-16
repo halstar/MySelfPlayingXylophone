@@ -7,7 +7,7 @@ import rotarybutton
 import midireader
 import ioextender
 import xylophone
-import einkscreen
+import lcdscreen
 import display
 import controller
 
@@ -18,7 +18,7 @@ from log     import *
 setup_data       = None
 io_extender_low  = None
 io_extender_high = None
-e_ink_screen     = None
+lcd_screen       = None
 
 
 def print_help():
@@ -127,12 +127,16 @@ def main():
     global setup_data
     global io_extender_low
     global io_extender_high
-    global e_ink_screen
+    global lcd_screen
 
     with open(SETUP_FILE, 'r') as json_file:
         setup_data = json.load(json_file)
 
     log_init(setup_data['LOG_LEVEL'])
+
+    # PIL library may add debug logs on opening files. Let's hide them!
+    pil_logger = logging.getLogger('PIL')
+    pil_logger.setLevel(logging.INFO)
 
     control.note_length = setup_data['XYLOPHONE_NOTE_LENGTH'] / 1000.0
 
@@ -161,8 +165,8 @@ def main():
     log(INFO, 'Main >>>>>> setting up display')
     log(INFO, '')
 
-    e_ink_screen      = einkscreen.EInkScreen(setup_data['SPI_BUS_NUMBER'], setup_data['E_INK_SPI_ADDRESS'])
-    display_interface = display.Display(e_ink_screen)
+    lcd_screen        = lcdscreen.LcdScreen(setup_data['SPI_BUS_NUMBER'], setup_data['LCD_SPI_ADDRESS'])
+    display_interface = display.Display(lcd_screen)
     display_interface.draw_init()
 
     log(INFO, '')
@@ -238,7 +242,7 @@ def graceful_exit(return_code):
 
     global io_extender_low
     global io_extender_high
-    global e_ink_screen
+    global lcd_screen
 
     if io_extender_low is not None:
         io_extender_low.shutdown()
@@ -246,10 +250,8 @@ def graceful_exit(return_code):
     if io_extender_high is not None:
         io_extender_high.shutdown()
 
-    if e_ink_screen is not None:
-
-        e_ink_screen.module_init()
-        e_ink_screen.module_exit()
+    if lcd_screen is not None:
+        lcd_screen.module_exit()
 
     if control.gpio_interface == USE_RPI_GPIO:
         log(INFO, 'Cleaning up GPIOs')

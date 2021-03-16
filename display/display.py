@@ -24,7 +24,7 @@ class Display:
 
     TRACK_NAME_MAXIMUM_LENGTH = 13
 
-    INIT_IMAGE = 'display/xylo.bmp'
+    INIT_IMAGE = 'display/xylo.png'
 
     SETTINGS_TITLE  = 'Main settings'
     TRACKS_TITLE    = 'Track selection'
@@ -35,12 +35,12 @@ class Display:
     STOP_TEXT       = 'Stop'
     TEMPO_TEXT      = 'Tempo: '
 
-    def __init__(self, e_ink_screen):
+    def __init__(self, lcd_screen):
 
         log(INFO, 'Setting up Display class')
 
-        self.e_ink_screen = e_ink_screen
-        self.midi_reader  = None
+        self.lcd_screen  = lcd_screen
+        self.midi_reader = None
 
         self.mode               = None
         self.mode_preset        = None
@@ -59,7 +59,7 @@ class Display:
         self.title_font = ImageFont.truetype('display/display_font.ttc', self.TITLE_FONT_HEIGHT)
         self.text_font  = ImageFont.truetype('display/display_font.ttc', self.TEXT_FONT_HEIGHT )
 
-        self.image  = Image.new('1', (E_INK_SCREEN_HEIGHT, E_INK_SCREEN_WIDTH), 255)
+        self.image  = Image.new("RGB", (LCD_SCREEN_HEIGHT, LCD_SCREEN_WIDTH), "WHITE")
         self.drawer = ImageDraw.Draw(self.image)
 
         self.play_track_text_width, height = self.drawer.textsize(self.PLAY_TRACK_TEXT, font = self.text_font)
@@ -94,9 +94,9 @@ class Display:
     def __get_fill_color__(is_inverted):
 
         if is_inverted == True:
-            return 255
+            return 'WHITE'
         else:
-            return 0
+            return 'BLACK'
 
     def __draw_mode_text__(self, mode, is_inverted):
 
@@ -142,7 +142,7 @@ class Display:
                           self.BIGGER_LINE_HEIGHT * 3 + self.bigger_text_vertical_offset),
                           str(tempo_value),
                           font = self.text_font,
-                          fill = 0)
+                          fill = 'BLACK')
 
         return
 
@@ -150,9 +150,9 @@ class Display:
 
         self.drawer.rectangle((self.LEFT_PANEL_WIDTH   + 1,
                                self.BIGGER_LINE_HEIGHT + 1,
-                               E_INK_SCREEN_HEIGHT     - 2,
-                               E_INK_SCREEN_WIDTH      - 2),
-                               fill = 255)
+                               LCD_SCREEN_HEIGHT       - 2,
+                               LCD_SCREEN_WIDTH        - 2),
+                               fill = 'WHITE')
 
         return
 
@@ -191,7 +191,7 @@ class Display:
                                    self.BIGGER_LINE_HEIGHT * 1 + self.BIGGER_SELECTION_MARGIN,
                                    self.HORIZONTAL_MARGIN  + self.play_track_text_width + self.BIGGER_SELECTION_MARGIN,
                                    self.BIGGER_LINE_HEIGHT * 2 - self.BIGGER_SELECTION_MARGIN),
-                                   fill = 255)
+                                   fill = 'WHITE')
 
             self.__draw_mode_text__(MODE.PLAY_ONE_TRACK, False)
 
@@ -201,7 +201,7 @@ class Display:
                                    self.BIGGER_LINE_HEIGHT   * 1 + self.BIGGER_SELECTION_MARGIN,
                                    self.LEFT_PANEL_MID_WIDTH + self.play_all_text_width + self.BIGGER_SELECTION_MARGIN,
                                    self.BIGGER_LINE_HEIGHT   * 2 - self.BIGGER_SELECTION_MARGIN),
-                                   fill = 255)
+                                   fill = 'WHITE')
 
             self.__draw_mode_text__(MODE.PLAY_ALL_TRACKS, False)
 
@@ -211,7 +211,7 @@ class Display:
                                    self.BIGGER_LINE_HEIGHT * 2 + self.BIGGER_SELECTION_MARGIN,
                                    self.HORIZONTAL_MARGIN  + self.loop_track_text_width + self.BIGGER_SELECTION_MARGIN,
                                    self.BIGGER_LINE_HEIGHT * 3 - self.BIGGER_SELECTION_MARGIN),
-                                   fill = 255)
+                                   fill = 'WHITE')
 
             self.__draw_mode_text__(MODE.LOOP_ONE_TRACK, False)
 
@@ -221,7 +221,7 @@ class Display:
                                    self.BIGGER_LINE_HEIGHT   * 2 + self.BIGGER_SELECTION_MARGIN,
                                    self.LEFT_PANEL_MID_WIDTH + self.stop_text_width + self.BIGGER_SELECTION_MARGIN,
                                    self.BIGGER_LINE_HEIGHT   * 3 - self.BIGGER_SELECTION_MARGIN),
-                                   fill = 255)
+                                   fill = 'WHITE')
 
             self.__draw_mode_text__(MODE.STOP, False)
 
@@ -243,7 +243,7 @@ class Display:
                                    self.BIGGER_LINE_HEIGHT * 1 + self.BIGGER_SELECTION_MARGIN,
                                    self.HORIZONTAL_MARGIN  + self.play_track_text_width + self.BIGGER_SELECTION_MARGIN,
                                    self.BIGGER_LINE_HEIGHT * 2 - self.BIGGER_SELECTION_MARGIN),
-                                   outline = 0)
+                                   outline = 'BLACK')
 
         elif mode == MODE.PLAY_ALL_TRACKS:
 
@@ -251,7 +251,7 @@ class Display:
                                    self.BIGGER_LINE_HEIGHT   * 1 + self.BIGGER_SELECTION_MARGIN,
                                    self.LEFT_PANEL_MID_WIDTH + self.play_all_text_width + self.BIGGER_SELECTION_MARGIN,
                                    self.BIGGER_LINE_HEIGHT   * 2 - self.BIGGER_SELECTION_MARGIN),
-                                   outline = 0)
+                                   outline = 'BLACK')
 
         elif mode == MODE.LOOP_ONE_TRACK:
 
@@ -259,7 +259,7 @@ class Display:
                                    self.BIGGER_LINE_HEIGHT * 2 + self.BIGGER_SELECTION_MARGIN,
                                    self.HORIZONTAL_MARGIN  + self.loop_track_text_width + self.BIGGER_SELECTION_MARGIN,
                                    self.BIGGER_LINE_HEIGHT * 3 - self.BIGGER_SELECTION_MARGIN),
-                                   outline = 0)
+                                   outline = 'BLACK')
 
         elif mode == MODE.STOP:
 
@@ -267,13 +267,13 @@ class Display:
                                    self.BIGGER_LINE_HEIGHT   * 2 + self.BIGGER_SELECTION_MARGIN,
                                    self.LEFT_PANEL_MID_WIDTH + self.stop_text_width + self.BIGGER_SELECTION_MARGIN,
                                    self.BIGGER_LINE_HEIGHT   * 3 - self.BIGGER_SELECTION_MARGIN),
-                                   outline = 0)
+                                   outline = 'BLACK')
 
         else:
 
             log(ERROR, 'Got an unsupported mode to preset: {}'.format(mode.name))
 
-        self.e_ink_screen.display_partial(self.image)
+        self.lcd_screen.display(self.image)
 
         self.mode_preset = mode
 
@@ -294,7 +294,7 @@ class Display:
                                    self.BIGGER_LINE_HEIGHT + self.BIGGER_SELECTION_MARGIN,
                                    self.HORIZONTAL_MARGIN  + self.play_track_text_width + self.BIGGER_SELECTION_MARGIN,
                                    self.BIGGER_LINE_HEIGHT * 2 - self.BIGGER_SELECTION_MARGIN),
-                                   fill = 0)
+                                   fill = 'BLACK')
 
             self.__draw_mode_text__(MODE.PLAY_ONE_TRACK, True)
 
@@ -304,7 +304,7 @@ class Display:
                                    self.BIGGER_LINE_HEIGHT   * 1 + self.BIGGER_SELECTION_MARGIN,
                                    self.LEFT_PANEL_MID_WIDTH + self.play_all_text_width + self.BIGGER_SELECTION_MARGIN,
                                    self.BIGGER_LINE_HEIGHT   * 2 - self.BIGGER_SELECTION_MARGIN),
-                                   fill = 0)
+                                   fill = 'BLACK')
 
             self.__draw_mode_text__(MODE.PLAY_ALL_TRACKS, True)
 
@@ -314,7 +314,7 @@ class Display:
                                    self.BIGGER_LINE_HEIGHT * 2 + self.BIGGER_SELECTION_MARGIN,
                                    self.HORIZONTAL_MARGIN  + self.loop_track_text_width + self.BIGGER_SELECTION_MARGIN,
                                    self.BIGGER_LINE_HEIGHT * 3 - self.BIGGER_SELECTION_MARGIN),
-                                   fill = 0)
+                                   fill = 'BLACK')
 
             self.__draw_mode_text__(MODE.LOOP_ONE_TRACK, True)
 
@@ -324,7 +324,7 @@ class Display:
                                    self.BIGGER_LINE_HEIGHT   * 2 + self.BIGGER_SELECTION_MARGIN,
                                    self.LEFT_PANEL_MID_WIDTH + self.stop_text_width + self.BIGGER_SELECTION_MARGIN,
                                    self.BIGGER_LINE_HEIGHT   * 3 - self.BIGGER_SELECTION_MARGIN),
-                                   fill = 0)
+                                   fill = 'BLACK')
 
             self.__draw_mode_text__(MODE.STOP, True)
 
@@ -332,7 +332,7 @@ class Display:
 
             log(ERROR, 'Got an unsupported mode to set: {}'.format(mode.name))
 
-        self.e_ink_screen.display_partial(self.image)
+        self.lcd_screen.display(self.image)
 
         self.mode_preset = mode
         self.mode        = mode
@@ -363,19 +363,19 @@ class Display:
 
             self.drawer.rectangle((self.LEFT_PANEL_WIDTH   + self.HORIZONTAL_MARGIN - self.BIGGER_SELECTION_MARGIN ,
                                    self.BIGGER_LINE_HEIGHT + self.SMALLER_LINE_HEIGHT * set_display_index + self.SMALLER_SELECTION_MARGIN ,
-                                   E_INK_SCREEN_HEIGHT     - self.BIGGER_SELECTION_MARGIN,
+                                   LCD_SCREEN_HEIGHT       - self.BIGGER_SELECTION_MARGIN,
                                    self.BIGGER_LINE_HEIGHT + self.SMALLER_LINE_HEIGHT * (set_display_index + 1)),
-                                   fill = 0)
+                                   fill = 'BLACK')
 
         self.drawer.rectangle((self.LEFT_PANEL_WIDTH   + self.HORIZONTAL_MARGIN - self.BIGGER_SELECTION_MARGIN ,
                                self.BIGGER_LINE_HEIGHT + self.SMALLER_LINE_HEIGHT * preset_display_index + self.SMALLER_SELECTION_MARGIN ,
-                               E_INK_SCREEN_HEIGHT     - self.BIGGER_SELECTION_MARGIN,
+                               LCD_SCREEN_HEIGHT       - self.BIGGER_SELECTION_MARGIN,
                                self.BIGGER_LINE_HEIGHT + self.SMALLER_LINE_HEIGHT * (preset_display_index + 1)),
-                               outline = 0)
+                               outline = 'BLACK')
 
         self.__draw_tracks_text__(self.track_index)
 
-        self.e_ink_screen.display_partial(self.image)
+        self.lcd_screen.display(self.image)
 
         self.track_preset_index = index
 
@@ -394,13 +394,13 @@ class Display:
 
         self.drawer.rectangle((self.LEFT_PANEL_WIDTH   + self.HORIZONTAL_MARGIN - self.BIGGER_SELECTION_MARGIN ,
                                self.BIGGER_LINE_HEIGHT + self.SMALLER_LINE_HEIGHT * set_display_index + self.SMALLER_SELECTION_MARGIN ,
-                               E_INK_SCREEN_HEIGHT     - self.BIGGER_SELECTION_MARGIN,
+                               LCD_SCREEN_HEIGHT       - self.BIGGER_SELECTION_MARGIN,
                                self.BIGGER_LINE_HEIGHT + self.SMALLER_LINE_HEIGHT * (set_display_index + 1)),
-                               fill = 0)
+                               fill = 'BLACK')
 
         self.__draw_tracks_text__(index)
 
-        self.e_ink_screen.display_partial(self.image)
+        self.lcd_screen.display(self.image)
 
         self.track_preset_index = index
         self.track_index        = index
@@ -413,7 +413,7 @@ class Display:
                                self.BIGGER_LINE_HEIGHT * 3 + self.BIGGER_SELECTION_MARGIN,
                                self.HORIZONTAL_MARGIN  + self.tempo_text_width + self.tempo_value_width + self.HORIZONTAL_MARGIN + self.BIGGER_SELECTION_MARGIN,
                                self.BIGGER_LINE_HEIGHT * 4 - self.BIGGER_SELECTION_MARGIN),
-                               fill = 255)
+                               fill = 'WHITE')
 
         return
 
@@ -430,11 +430,11 @@ class Display:
                                self.BIGGER_LINE_HEIGHT * 3 + self.BIGGER_SELECTION_MARGIN,
                                self.HORIZONTAL_MARGIN  + self.tempo_text_width + self.tempo_value_width + self.HORIZONTAL_MARGIN + self.BIGGER_SELECTION_MARGIN,
                                self.BIGGER_LINE_HEIGHT * 4 - self.BIGGER_SELECTION_MARGIN),
-                               outline = 0)
+                               outline = 'BLACK')
 
         self.__draw_tempo_value__(tempo)
 
-        self.e_ink_screen.display_partial(self.image)
+        self.lcd_screen.display(self.image)
 
         self.tempo_preset = tempo
 
@@ -451,7 +451,7 @@ class Display:
 
         self.__draw_tempo_value__(tempo)
 
-        self.e_ink_screen.display_partial(self.image)
+        self.lcd_screen.display(self.image)
 
         self.tempo_preset = tempo
         self.tempo        = tempo
@@ -462,11 +462,11 @@ class Display:
 
         log(INFO, 'Display draw initialization image: {}'.format(self.INIT_IMAGE))
 
-        self.e_ink_screen.module_init()
+        self.lcd_screen.module_init()
 
-        bmp_image = Image.open(self.INIT_IMAGE)
+        file_image = Image.open(self.INIT_IMAGE)
 
-        self.e_ink_screen.display(bmp_image)
+        self.lcd_screen.display(file_image)
 
         return
 
@@ -474,17 +474,15 @@ class Display:
 
         log(INFO, 'Display going operational')
 
-        self.e_ink_screen.module_init()
-
         # Draw a simple rectangle around screen
-        self.drawer.rectangle((0, 0, E_INK_SCREEN_HEIGHT - 1, E_INK_SCREEN_WIDTH - 1), outline = 0)
+        self.drawer.rectangle((0, 0, LCD_SCREEN_HEIGHT - 1, LCD_SCREEN_WIDTH - 1), outline = 0)
 
         # Draw Main settings title
         self.drawer.text((self.HORIZONTAL_MARGIN,
                           self.title_vertical_offset),
                           self.SETTINGS_TITLE,
                           font = self.title_font,
-                          fill = 0)
+                          fill = 'BLACK')
 
         # Initialize Mode drawing, with no selection
         self.__draw_mode_text__(MODE.PLAY_ONE_TRACK , False)
@@ -496,36 +494,36 @@ class Display:
                           self.BIGGER_LINE_HEIGHT * 3,
                           self.LEFT_PANEL_WIDTH,
                           self.BIGGER_LINE_HEIGHT * 3),
-                          fill = 0)
+                          fill = 'BLACK')
 
         # Initialize Tempo drawing, with no value
         self.drawer.text((self.HORIZONTAL_MARGIN,
                           self.BIGGER_LINE_HEIGHT * 3 + self.bigger_text_vertical_offset),
                           self.TEMPO_TEXT,
                           font = self.text_font,
-                          fill = 0)
+                          fill = 'BLACK')
 
         self.drawer.line((self.LEFT_PANEL_WIDTH,
                           0,
                           self.LEFT_PANEL_WIDTH,
-                          E_INK_SCREEN_WIDTH - 1),
-                          fill = 0)
+                          LCD_SCREEN_WIDTH - 1),
+                          fill = 'BLACK')
 
         # Draw Track selection title
         self.drawer.text((self.LEFT_PANEL_WIDTH + self.HORIZONTAL_MARGIN,
                           self.title_vertical_offset),
                           self.TRACKS_TITLE,
                           font = self.title_font,
-                          fill = 0)
+                          fill = 'BLACK')
 
         # Draw a line under both titles
         self.drawer.line((0,
                           self.BIGGER_LINE_HEIGHT,
-                          E_INK_SCREEN_HEIGHT - 1,
+                          LCD_SCREEN_HEIGHT - 1,
                           self.BIGGER_LINE_HEIGHT),
-                          fill = 0)
+                          fill = 'BLACK')
 
-        self.e_ink_screen.display_base(self.image)
+        self.lcd_screen.display(self.image)
 
         # Setup mode, tracks  and tempo with initial values
         self.set_mode (DEFAULT_MODE )

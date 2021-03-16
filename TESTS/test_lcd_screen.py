@@ -3,7 +3,7 @@ import sys
 import time
 from PIL import Image, ImageDraw, ImageFont
 
-sys.path.append("..")
+sys.path.append('..')
 
 import lcdscreen
 
@@ -13,7 +13,7 @@ from log      import *
 VERSION          = '1.0'
 UPDATE_DATE      = '2021-03-15'
 VERSION_STRING   = '%%prog v%s (%s)' % (VERSION, UPDATE_DATE)
-USAGE            = 'usage: %prog [-h] [--verbose=INT] --spi-address=INT [--drawer-portrait] [--drawer-landscape] [--drawer-full-bmp] [--drawer-window-bmp] [--drawer-partial-update]'
+USAGE            = 'usage: %prog [-h] [--verbose=INT] --spi-address=INT [--drawer-portrait] [--drawer-landscape] [--drawer-full-file] [--drawer-window-file]'
 LONG_DESCRIPTION = 'This program makes possible to easily test the LCD screen class. ' \
                    'Verbose level is between 0 (lowest) & 4.'
 
@@ -77,23 +77,17 @@ def main():
                           dest    = 'draw_landscape',
                           help    = 'Optional - Test drawing in landscape mode')
 
-        parser.add_option('-b',
-                          '--drawer-full-bmp',
+        parser.add_option('-f',
+                          '--draw-full-file',
                           action  = 'store_true',
-                          dest    = 'draw_full_bmp',
-                          help    = 'Optional - Test drawing with bitmap image in full screen')
+                          dest    = 'draw_full_file',
+                          help    = 'Optional - Test drawing with an image file in full screen')
 
         parser.add_option('-w',
-                          '--drawer-window-bmp',
+                          '--draw-window-file',
                           action  = 'store_true',
-                          dest    = 'draw_window_bmp',
-                          help    = 'Optional - Test drawing with bitmap image in a window')
-
-        parser.add_option('-u',
-                          '--drawer-partial-update',
-                          action  = 'store_true',
-                          dest    = 'draw_partial_update',
-                          help    = 'Optional - Test drawing with partial update')
+                          dest    = 'draw_window_file',
+                          help    = 'Optional - Test drawing with an image file in a window')
 
         # Set options defaults
         parser.set_defaults(verbose = DEFAULT_LOG_LEVEL)
@@ -111,6 +105,10 @@ def main():
 
         log_set_level(int(opts.verbose))
 
+        # PIL library may add debug logs on opening files. Let's hide them!
+        pil_logger = logging.getLogger('PIL')
+        pil_logger.setLevel(logging.INFO)
+
     except Exception as error:
         log(ERROR, 'Unexpected parsing error. Try --help')
         log(ERROR, '{}'.format(error))
@@ -127,63 +125,87 @@ def main():
     log(INFO, '')
 
     lcd_screen = lcdscreen.LcdScreen(SPI_BUS_NUMBER, int(opts.spi_address))
-
     lcd_screen.module_init()
 
     font_1 = ImageFont.truetype('lcd_screen_font_1.ttf', 25)
     font_2 = ImageFont.truetype('lcd_screen_font_2.ttf', 35)
     font_3 = ImageFont.truetype('lcd_screen_font_3.ttf', 32)
 
-    # Create blank image for drawing.
-    image  = Image.new("RGB", (LCD_SCREEN_WIDTH, LCD_SCREEN_HEIGHT ), "WHITE")
-    drawer = ImageDraw.Draw(image)
+    if opts.draw_landscape == True:
 
-    # logging.info("drawer point")
+        log(INFO, 'Drawing image with landscape orientation')
 
-    drawer.rectangle((5,10,6,11), fill = "BLACK")
-    drawer.rectangle((5,25,7,27), fill = "BLACK")
-    drawer.rectangle((5,40,8,43), fill = "BLACK")
-    drawer.rectangle((5,55,9,59), fill = "BLACK")
+        draw_image = Image.new('RGB', (LCD_SCREEN_HEIGHT, LCD_SCREEN_WIDTH), 'WHITE')
+        drawer     = ImageDraw.Draw(draw_image)
 
-    # logging.info("drawer line")
-    
-    drawer.line([(20, 10),(70, 60)], fill = "RED",width = 1)
-    drawer.line([(70, 10),(20, 60)], fill = "RED",width = 1)
-    drawer.line([(170,15),(170,55)], fill = "RED",width = 1)
-    drawer.line([(150,35),(190,35)], fill = "RED",width = 1)
+        # Draw some points
+        drawer.rectangle((15, 10, 16, 11), fill = 'BLACK')
+        drawer.rectangle((15, 25, 17, 27), fill = 'RED'  )
+        drawer.rectangle((15, 40, 18, 43), fill = 'GREEN')
+        drawer.rectangle((15, 55, 19, 59), fill = 'BLUE' )
 
-    # logging.info("drawer rectangle")
-    
-    drawer.rectangle([(20,10),(70,60)],fill = "WHITE",outline="BLUE")
-    drawer.rectangle([(85,10),(130,60)],fill = "BLUE")
+        # Draw circles
+        drawer.arc    (( 60, 15, 100, 55), 0, 360, fill = (0, 255, 0))
+        drawer.ellipse((120, 15, 160, 55),         fill = (0, 255, 0))
 
-    # logging.info("drawer circle")
-    
-    drawer.arc((150,15,190,55),0, 360, fill =(0,255,0))
-    drawer.ellipse((150,65,190,105), fill = (0,255,0))
+        # Draw some lines
+        drawer.line([(80, 15), ( 80, 55)], fill = 'RED', width = 1)
+        drawer.line([(60, 35), (100, 35)], fill = 'RED', width = 1)
 
-    # logging.info("drawer text")
-    drawer.rectangle([(0,65),(140,100)],fill = "WHITE")
-    drawer.text((5, 68), 'Hello world', fill = "BLACK",font=font_1)
-    drawer.rectangle([(0,115),(190,160)],fill = "RED")
-    drawer.text((5, 118), 'WaveShare', fill = "WHITE",font=font_2)
-    drawer.text((5, 160), '1234567890', fill = "GREEN",font=font_3)
-    text= u"微雪电子"
-    drawer.text((5, 200),text, fill = "BLUE",font=font_3)
-    image = image.rotate(0)
+        # Draw some texts
+        drawer.text((10, 100), '1234567890'  , fill = 'GREEN', font = font_1)
+        drawer.text((10, 150), 'Hi there!...', fill = 'BLUE' , font = font_2)
 
-    lcd_screen.display(image)
-    time.sleep(5)
+        lcd_screen.display(draw_image)
 
-    # logging.info("show image")
+        time.sleep(5)
 
-    image = Image.open('lcd_screen_image.jpg')
-    image = image.rotate(0)
+    if opts.draw_portrait == True:
 
-    lcd_screen.display(image)
-    time.sleep(5)
+        log(INFO, 'Drawing image with portrait orientation')
 
-    lcd_screen.module_exit()
+        draw_image = Image.new('RGB', (LCD_SCREEN_WIDTH, LCD_SCREEN_HEIGHT), 'WHITE')
+        drawer     = ImageDraw.Draw(draw_image)
+
+        # Draw some rectangles
+        drawer.rectangle([(20, 10), ( 70, 60)], fill = 'WHITE', outline = 'BLUE')
+        drawer.rectangle([(85, 10), (130, 60)], fill = 'BLUE')
+
+        # Draw some lines
+        drawer.line([(20, 10), (70, 60)], fill = 'RED', width = 1)
+        drawer.line([(70, 10), (20, 60)], fill = 'RED', width = 1)
+
+        # Draw some texts
+        drawer.rectangle([(3,  65), (140, 100)]  , fill = 'WHITE')
+        drawer.text      ((5,  68), 'Hello world', fill = 'BLACK', font = font_3)
+        drawer.rectangle([(3, 115), (190, 160)]  , fill = 'RED')
+        drawer.text      ((5, 118), 'WaveShare'  , fill = 'WHITE', font = font_2)
+
+        lcd_screen.display(draw_image)
+
+        time.sleep(5)
+
+    if opts.draw_full_file == True:
+
+        log(INFO, 'Drawing with a full screen image file')
+
+        file_image = Image.open('lcd_screen_image_full.jpg')
+
+        lcd_screen.display(file_image)
+
+        time.sleep(5)
+
+    if opts.draw_window_file == True:
+
+        log(INFO, 'Drawing with a window image file')
+
+        file_image  = Image.new('RGB', (LCD_SCREEN_HEIGHT, LCD_SCREEN_WIDTH), 'WHITE')
+        file_window = Image.open('lcd_screen_image_window.png')
+        file_image.paste(file_window, (100, 100))
+
+        lcd_screen.display(file_image)
+
+        time.sleep(5)
 
     log(INFO, '')
     log(INFO, 'Exiting...')
@@ -207,23 +229,21 @@ def graceful_exit(return_code):
 
     return
 
-log_init(DEBUG)
-main()
 
-# if __name__ == '__main__':
-#
-#     try:
-#
-#         log_init(ERROR)
-#
-#         main_status = main()
-#
-#         graceful_exit(main_status)
-#
-#     except KeyboardInterrupt:
-#         log(ERROR, 'Keyboard interrupt...')
-#         graceful_exit(1)
-#
-#     except Exception as error:
-#         log(ERROR, 'Error: ' + str(error))
-#         graceful_exit(2)
+if __name__ == '__main__':
+
+    try:
+
+        log_init(ERROR)
+
+        main_status = main()
+
+        graceful_exit(main_status)
+
+    except KeyboardInterrupt:
+        log(ERROR, 'Keyboard interrupt...')
+        graceful_exit(1)
+
+    except Exception as error:
+        log(ERROR, 'Error: ' + str(error))
+        graceful_exit(2)

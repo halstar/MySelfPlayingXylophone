@@ -38,8 +38,6 @@ REQUIRED_PYTHON_VERSION = 3
 
 def main():
 
-    global e_ink_screen
-
     # Get input options
     argv = sys.argv[1:]
 

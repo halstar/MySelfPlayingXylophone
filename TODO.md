@@ -1,12 +1,5 @@
-=> Remove E-ink screen module & dependencies,
-=> Cleanup/finalize test_lcd_screen,
-=> Wire main & display with LCD,
-=> Test LCD against Modes, etc.
-
 => Add couple more commands in console,
 => Finalize welcome screen & welcome music
-
-=> Turn SPI to max speed? 1MHz?
 
 => Display: add like scroll bar arrows in track selection part?
 => Display: add play/pause status indicator?

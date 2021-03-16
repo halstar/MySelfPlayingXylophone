@@ -34,15 +34,6 @@ TEMPO_BUTTON_PIN_PRESS = 21
 # TEMPO_BUTTON_PIN_2     = 27
 # TEMPO_BUTTON_PIN_PRESS = 18
 
-# E-ink screen connection definition
-
-E_INK_SCREEN_BUSY_PIN  = 24
-E_INK_SCREEN_RESET_PIN = 17
-E_INK_SCREEN_DC_PIN    = 25
-E_INK_SCREEN_CS_PIN    =  8
-E_INK_SCREEN_SCLK_PIN  = 11
-E_INK_SCREEN_SDIN_PIN  = 10
-
 # LCD screen connection definition
 
 LCD_SCREEN_BL_PIN    = 24
@@ -65,9 +56,6 @@ class MODE(Enum):
 # Other, general purpose and detailed constants
 
 MAIN_LOOP_SLEEP_TIME = 0.01
-
-E_INK_SCREEN_WIDTH  = 128
-E_INK_SCREEN_HEIGHT = 296
 
 LCD_SCREEN_WIDTH  = 240
 LCD_SCREEN_HEIGHT = 320

@@ -7,7 +7,7 @@
     "SPI_BUS_NUMBER"          :  0,
     "MCP_23017_I2C_ADDRESS_1" : 32,
     "MCP_23017_I2C_ADDRESS_2" : 33,
-    "E_INK_SPI_ADDRESS"       :  0,
+    "LCD_SPI_ADDRESS"         :  0,
 
     "XYLOPHONE_LOWEST_NOTE"   : 53,
     "XYLOPHONE_NOTES_COUNT"   : 32,

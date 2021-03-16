@@ -100,7 +100,7 @@ class LcdScreen:
             for i in range(0, len(pix), 4096):
                 self.__send_data_list__(pix[i:i + 4096])
 
-        else:
+        elif (image_width == LCD_SCREEN_WIDTH) and (image_height == LCD_SCREEN_HEIGHT):
 
             log(DEBUG, "Drawing in portrait mode")
 
@@ -119,6 +119,10 @@ class LcdScreen:
 
             for i in range(0, len(pix), 4096):
                 self.__send_data_list__(pix[i:i + 4096])
+
+        else:
+
+            log(ERROR, "Cannot display image; bad image size: {}x{}".format(image_width, image_height))
 
         return
 
@@ -247,7 +251,7 @@ class LcdScreen:
         self.__send_command__(0x29)
         
         # Clear screen with a blank image
-        image = Image.new("RGB", (LCD_SCREEN_WIDTH, LCD_SCREEN_HEIGHT), "WHITE")
+        image = Image.new("RGB", (LCD_SCREEN_HEIGHT, LCD_SCREEN_WIDTH), "WHITE")
         self.display(image)
 
         return

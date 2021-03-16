@@ -3,7 +3,7 @@ import sys
 import time
 import threading
 
-sys.path.append("..")
+sys.path.append('..')
 
 import rotarybutton
 
