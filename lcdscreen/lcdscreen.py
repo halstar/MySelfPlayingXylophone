@@ -17,8 +17,8 @@ class LcdScreen:
 
         log(INFO, 'Setting up LCD screen class')
 
-        self.spi_device = spi.SpiDevice(bus, address, self.SPI_MAX_SPEED_IN_HZ)
-        self.bl_pwm     = None
+        self.spi_device    = spi.SpiDevice(bus, address, self.SPI_MAX_SPEED_IN_HZ)
+        self.backlight_pwm = None
 
         return
 
@@ -138,8 +138,8 @@ class LcdScreen:
         RPi.GPIO.setup(LCD_SCREEN_BL_PIN   , RPi.GPIO.OUT)
 
         # Turn backlight 100% ON by deftault
-        self.bl_pwm = RPi.GPIO.PWM(LCD_SCREEN_BL_PIN, 1000)
-        self.bl_pwm.start(100)
+        self.backlight_pwm = RPi.GPIO.PWM(LCD_SCREEN_BL_PIN, 1000)
+        self.backlight_pwm.start(100)
 
         # Hardware reset
         RPi.GPIO.output(LCD_SCREEN_RESET_PIN, 1)
@@ -261,7 +261,7 @@ class LcdScreen:
         log(INFO, 'Shutting down LCD screen')
 
         self.spi_device.close()
-        self.bl_pwm.stop()
+        self.backlight_pwm.stop()
 
         RPi.GPIO.output(LCD_SCREEN_RESET_PIN, 0)
         RPi.GPIO.output(LCD_SCREEN_DC_PIN   , 0)

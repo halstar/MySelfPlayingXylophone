@@ -26,16 +26,17 @@ class Controller:
 
         log(INFO, 'Setting up Controller')
 
-        self.mode_button  = mode_button
-        self.track_button = track_button
-        self.tempo_button = tempo_button
-        self.xylophone    = xylophone
-        self.midi_reader  = midi_reader
-        self.display      = display
+        self.mode_button      = mode_button
+        self.track_button     = track_button
+        self.tempo_button     = tempo_button
+        self.xylophone        = xylophone
+        self.midi_reader      = midi_reader
+        self.display          = display
+        self.auto_mode_change = False
 
         self.mode        = DEFAULT_MODE
         self.track_index = DEFAULT_TRACK
-        self.__set_track_tempo__(midi_reader.get_file_tempo(DEFAULT_TRACK))
+        self.__set_track_tempo__(self.midi_reader.get_file_tempo(self.track_index))
         self.__set_play_tempo__ (self.track_tempo)
         self.__set_tempo_ratio__()
 
@@ -166,13 +167,17 @@ class Controller:
             preset_tempo     = self.tempo_button.get_state()
 
             # Possibly update screen with possible new preset mode/track/tempo
-            self.display.preset_mode (self.mode       )
-            self.display.preset_track(self.track_index)
-            self.display.preset_tempo(preset_tempo    )
+            self.display.preset_mode      (self.mode       )
+            self.display.preset_play_tempo(preset_tempo    )
+            self.display.set_track_tempo  (self.track_index)
+            self.display.set_track_length (self.track_index)
+            self.display.preset_track     (self.track_index)
 
             # Deal with all 3 buttons click status
 
-            if self.mode_button.was_clicked() == True:
+            if (self.mode_button.was_clicked() == True) or (self.auto_mode_change == True):
+
+                self.auto_mode_change = False
 
                 self.display.set_mode(self.mode)
 
@@ -203,11 +208,11 @@ class Controller:
                 self.display.set_mode     (self.mode)
 
                 # Force tempo change to play that file at its default pace
-                self.__set_track_tempo__   (self.midi_reader.get_file_tempo(self.track_index))
-                self.__set_play_tempo__    (self.track_tempo)
-                self.__set_tempo_ratio__   ()
-                self.tempo_button.set_state(self.track_tempo)
-                self.display.set_tempo     (self.track_tempo)
+                self.__set_track_tempo__    (self.midi_reader.get_file_tempo(self.track_index))
+                self.__set_play_tempo__     (self.track_tempo)
+                self.__set_tempo_ratio__    (                )
+                self.tempo_button.set_state (self.track_tempo)
+                self.display.set_play_tempo (self.track_tempo)
 
                 # Update the requested track on display
                 self.display.set_track(self.track_index)
@@ -217,9 +222,9 @@ class Controller:
 
             if self.tempo_button.was_clicked() == True:
 
-                self.__set_play_tempo__ (preset_tempo)
-                self.__set_tempo_ratio__()
-                self.display.set_tempo  (preset_tempo)
+                self.__set_play_tempo__    (preset_tempo)
+                self.__set_tempo_ratio__   (            )
+                self.display.set_play_tempo(preset_tempo)
 
             time.sleep(MAIN_LOOP_SLEEP_TIME)
 
@@ -273,7 +278,6 @@ class Controller:
 
                         # Force track change to show up
                         self.track_button.set_state(self.track_index)
-                        self.display.set_track     (self.track_index)
 
                         # Sleep a bit in between tracks...
                         time.sleep(INTER_TRACKS_SLEEP)
@@ -288,7 +292,7 @@ class Controller:
                 # Force mode change to show up that we are now stopped
                 self.mode = MODE.STOP
                 self.mode_button.set_state(self.mode)
-                self.display.set_mode     (self.mode)
+                self.auto_mode_change = True
 
                 self.state = self.STATE_IDLE
 

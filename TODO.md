@@ -1,8 +1,5 @@
 => Add couple more commands in console,
 => Finalize welcome screen & welcome music
-
-=> Display: add like scroll bar arrows in track selection part?
-=> Display: add play/pause status indicator?
 => Add embedded metronome capability, with a loudspeaker, ON/OFF button on display? 
 
 List of track that could be included:
