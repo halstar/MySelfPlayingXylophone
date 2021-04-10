@@ -170,6 +170,16 @@ class MidiReader:
             print('Play in progress ')
         else:
             print('Play not in progress ')
+        print('')
+
+        index = 0
+
+        for file in self.files:
+
+            length_string = turn_seconds_int_to_minutes_and_seconds_string(file['length'])
+            print('#{}: {} - {} - {}'.format(index, file['name'], length_string , file['tempo']))
+            index += 1
+
         return
 
     def print_file_info(self, index):

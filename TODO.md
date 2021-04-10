@@ -1,6 +1,7 @@
 => Add couple more commands in console,
 => Finalize welcome screen & welcome music
-=> Add embedded metronome capability, with a loudspeaker, ON/OFF button on display? 
+=> Add embedded metronome capability, with a loudspeaker, ON/OFF button on display?
+=> Add a file preview capability, with an amplifier, a loudspeaker & another rotary button to adjust volume? 
 
 List of track that could be included:
 
@@ -11,6 +12,7 @@ List of track that could be included:
 => Greenleaves
 => Jingle bells
 => Silent night
+=> Radiohead, No surprises
 => We wish you a merry christmas
 => Twinkle, twinkle, little star
 => Tracks from studies piano book

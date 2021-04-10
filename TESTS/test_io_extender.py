@@ -90,14 +90,14 @@ def main():
                           '--primary-io-pin',
                           action  = 'store',
                           dest    = 'primary_io_pin',
-                          help    = 'Mandatory - Primary IO pin to test (0 to 31)',
+                          help    = 'Mandatory - Primary IO pin to test (0 to 15)',
                           metavar = 'INT')
 
         parser.add_option('-s',
                           '--secondary-io-pin',
                           action  = 'store',
                           dest    = 'secondary_io_pin',
-                          help    = 'Optional - Secondray IO pin to test (0 to 31)',
+                          help    = 'Optional - Secondray IO pin to test (0 to 15)',
                           metavar = 'INT')
 
         parser.add_option('-0',

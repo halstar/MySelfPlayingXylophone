@@ -111,6 +111,12 @@ class Controller:
 
         return
 
+    def play_notes_from_console(self, notes):
+
+        self.xylophone.play_notes(notes)
+
+        return
+
     def play_track(self):
 
         self.state = self.STATE_PLAYING_TRACK
@@ -225,6 +231,9 @@ class Controller:
                 self.__set_play_tempo__    (preset_tempo)
                 self.__set_tempo_ratio__   (            )
                 self.display.set_play_tempo(preset_tempo)
+
+            # Now actually refresh display with all possible previous updates
+            self.display.refresh()
 
             time.sleep(MAIN_LOOP_SLEEP_TIME)
 

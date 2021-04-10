@@ -50,6 +50,8 @@ class Display:
 
         self.lcd_screen  = lcd_screen
         self.midi_reader = None
+        self.image       = None
+        self.drawer      = None
 
         self.mode               = None
         self.mode_preset        = None
@@ -62,6 +64,7 @@ class Display:
         self.track_length       = None
         self.tracks_count       = 0
         self.tracks             = []
+        self.is_refresh_needed  = False
 
         self.title_vertical_offset        = math.ceil((self.BIGGER_LINE_HEIGHT  - self.TITLE_FONT_HEIGHT) / 2.0)
         self.bigger_text_vertical_offset  = math.ceil((self.BIGGER_LINE_HEIGHT  - self.TEXT_FONT_HEIGHT ) / 2.0)
@@ -69,16 +72,6 @@ class Display:
 
         self.title_font = ImageFont.truetype('display/display_font.ttf', self.TITLE_FONT_HEIGHT)
         self.text_font  = ImageFont.truetype('display/display_font.ttf', self.TEXT_FONT_HEIGHT )
-
-        self.image  = Image.new("RGB", (LCD_SCREEN_HEIGHT, LCD_SCREEN_WIDTH), self.BACKGROUND_COLOR)
-        self.drawer = ImageDraw.Draw(self.image)
-
-        self.play_track_text_width   , height = self.drawer.textsize(self.PLAY_TRACK_TEXT, font = self.text_font)
-        self.play_all_text_width     , height = self.drawer.textsize(self.PLAY_ALL_TEXT  , font = self.text_font)
-        self.loop_track_text_width   , height = self.drawer.textsize(self.LOOP_TRACK_TEXT, font = self.text_font)
-        self.stop_text_width         , height = self.drawer.textsize(self.STOP_TEXT      , font = self.text_font)
-        self.tempo_value_width       , height = self.drawer.textsize('123'               , font = self.text_font)
-        self.track_length_value_width, height = self.drawer.textsize('12:34'             , font = self.text_font)
 
         return
 
@@ -328,9 +321,9 @@ class Display:
 
             log(ERROR, 'Got an unsupported mode to preset: {}'.format(mode.name))
 
-        self.lcd_screen.display(self.image)
-
         self.mode_preset = mode
+
+        self.is_refresh_needed = True
 
         return
 
@@ -387,10 +380,10 @@ class Display:
 
             log(ERROR, 'Got an unsupported mode to set: {}'.format(mode.name))
 
-        self.lcd_screen.display(self.image)
-
         self.mode_preset = mode
         self.mode        = mode
+
+        self.is_refresh_needed = True
 
         return
 
@@ -438,9 +431,9 @@ class Display:
 
             self.__draw_lower_triangle__()
 
-        self.lcd_screen.display(self.image)
-
         self.track_preset_index = index
+
+        self.is_refresh_needed = True
 
         return
 
@@ -471,10 +464,10 @@ class Display:
 
             self.__draw_lower_triangle__()
 
-        self.lcd_screen.display(self.image)
-
         self.track_preset_index = index
         self.track_index        = index
+
+        self.is_refresh_needed = True
 
         return
 
@@ -525,9 +518,9 @@ class Display:
 
         self.__draw_play_tempo_value__(tempo)
 
-        self.lcd_screen.display(self.image)
-
         self.play_tempo_preset = tempo
+
+        self.is_refresh_needed = True
 
         return
 
@@ -542,10 +535,10 @@ class Display:
 
         self.__draw_play_tempo_value__(tempo)
 
-        self.lcd_screen.display(self.image)
-
         self.play_tempo_preset = tempo
         self.play_tempo        = tempo
+
+        self.is_refresh_needed = True
 
         return
 
@@ -562,9 +555,9 @@ class Display:
 
         self.__draw_track_tempo_value__(tempo)
 
-        self.lcd_screen.display(self.image)
-
         self.track_tempo = tempo
+
+        self.is_refresh_needed = True
 
         return
 
@@ -581,9 +574,21 @@ class Display:
 
         self.__draw_track_length_value__(length)
 
-        self.lcd_screen.display(self.image)
-
         self.track_length = length
+
+        self.is_refresh_needed = True
+
+        return
+
+    def refresh(self):
+
+        if self.is_refresh_needed == True:
+
+            log(INFO, 'Display refresh')
+
+            self.lcd_screen.display(self.image)
+
+            self.is_refresh_needed = False
 
         return
 
@@ -593,15 +598,26 @@ class Display:
 
         self.lcd_screen.module_init()
 
-        file_image = Image.open(self.INIT_IMAGE)
+        self.image = Image.open(self.INIT_IMAGE)
 
-        self.lcd_screen.display(file_image)
+        self.lcd_screen.display(self.image)
 
         return
 
     def draw_oper(self):
 
         log(INFO, 'Display going operational')
+
+        # Initiate image and texts
+        self.image  = Image.new("RGB", (LCD_SCREEN_HEIGHT, LCD_SCREEN_WIDTH), self.BACKGROUND_COLOR)
+        self.drawer = ImageDraw.Draw(self.image)
+
+        self.play_track_text_width   , height = self.drawer.textsize(self.PLAY_TRACK_TEXT, font = self.text_font)
+        self.play_all_text_width     , height = self.drawer.textsize(self.PLAY_ALL_TEXT  , font = self.text_font)
+        self.loop_track_text_width   , height = self.drawer.textsize(self.LOOP_TRACK_TEXT, font = self.text_font)
+        self.stop_text_width         , height = self.drawer.textsize(self.STOP_TEXT      , font = self.text_font)
+        self.tempo_value_width       , height = self.drawer.textsize('123'               , font = self.text_font)
+        self.track_length_value_width, height = self.drawer.textsize('12:34'             , font = self.text_font)
 
         # Draw a simple rectangle around screen
         self.drawer.rectangle((0, 0, LCD_SCREEN_HEIGHT - 1, LCD_SCREEN_WIDTH - 1), outline = 0)
@@ -675,15 +691,14 @@ class Display:
                           self.BIGGER_LINE_HEIGHT),
                           fill = self.LINES_COLOR)
 
-        self.lcd_screen.display(self.image)
-
         # Setup mode, tracks  and tempos with initial values
-        self.set_mode (DEFAULT_MODE )
+        self.set_mode        (DEFAULT_MODE )
         self.set_play_tempo  (self.tracks[DEFAULT_TRACK]['tempo' ])
         self.set_track_tempo (DEFAULT_TRACK)
         self.set_track_length(DEFAULT_TRACK)
         self.preset_track    (DEFAULT_TRACK)
         self.set_track       (DEFAULT_TRACK)
 
+        self.lcd_screen.display(self.image)
 
         return

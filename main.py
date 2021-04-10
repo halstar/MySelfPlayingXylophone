@@ -30,11 +30,12 @@ def print_help():
     print('')
     print('Play welcome sound             : w')
     print('Play a single note             : n=60')
+    print('Play chord, i.e. several notes : c=[60, 62]')
     print('Change file playing tempo      : t=90')
     print('Start playing file by index    : p=2')
     print('Stop  playing file (interrupt) : s')
     print('')
-    print('Change note length, in ms : g=20')
+    print('Change note length, in ms : g=20 (current: {})'.format(int(control.note_length * 1000)))
     print('')
     print('Set log level: l=0 > NO_LOG , 1 > ERROR,')
     print('                 2 > WARNING, 3 > INFO , 4 > DEBUG')
@@ -90,7 +91,11 @@ def console_thread(midi_reader, main_controller):
         elif len(user_input) > 2 and user_input[1] == '=':
 
             command = user_input[0]
-            value   = float(user_input[2:])
+
+            if command != 'c':
+                value = int(user_input[2:])
+            else:
+                value = json.loads(user_input[2:])
 
             if command == 'l':
                 if value == 0:
@@ -106,17 +111,19 @@ def console_thread(midi_reader, main_controller):
                 else:
                     print('Invalid log level')
             elif command == 'i':
-                midi_reader.print_file_info(int(value))
+                midi_reader.print_file_info(value)
             elif command == 'd':
-                midi_reader.print_file_details(int(value))
+                midi_reader.print_file_details(value)
             elif command == 'n':
-                main_controller.play_note_from_console(int(value))
+                main_controller.play_note_from_console(value)
+            elif command == 'c':
+                main_controller.play_notes_from_console(value)
             elif command == 't':
-                main_controller.set_tempo_from_console(int(value))
+                main_controller.set_tempo_from_console(value)
             elif command == 'p':
-                main_controller.play_track_from_console(int(value))
+                main_controller.play_track_from_console(value)
             elif command == 'g':
-                control.note_length = int(value) / 1000.0
+                control.note_length = float(value) / 1000.0
                 print('Changing note length to {} ms'.format(int(value)))
 
     return
