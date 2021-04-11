@@ -73,9 +73,7 @@ class Controller:
 
             pause_duration = event['value'] * self.tempo_ratio
 
-            log(DEBUG, 'Let\'s pause for: {} s'.format(pause_duration))
-
-            time.sleep(pause_duration)
+            self.xylophone.pause(pause_duration)
 
         else:
 
@@ -123,13 +121,17 @@ class Controller:
 
         return
 
-    def play_track_from_console(self, index):
+    def play_track_from_console(self, index, use_file_tempo):
 
         # Force track change to show up on display
         self.track_button.set_state(index)
 
         self.__set_track_tempo__(self.midi_reader.get_file_tempo(index))
-        # Do not change play tempo as it could have a specific value from console
+        if use_file_tempo == True:
+            self.__set_play_tempo__(self.track_tempo)
+        else:
+            # Do not change play tempo; use last specific value set on console
+            pass
         self.__set_tempo_ratio__()
 
         # Force mode change to just play that file
@@ -310,3 +312,13 @@ class Controller:
                 log(ERROR, 'Got to an unsupported state: {}'.format(self.state))
 
                 self.state = self.STATE_IDLE
+
+    def print_status(self):
+
+        print('Tracks count: {}'.format(self.tracks_count))
+        print('Track index : {}'.format(self.track_index ))
+        print('Track tempo : {}'.format(self.track_tempo ))
+        print('Play  tempo : {}'.format(self.play_tempo  ))
+        print('Tempo ratio : {}'.format(self.tempo_ratio ))
+
+        return

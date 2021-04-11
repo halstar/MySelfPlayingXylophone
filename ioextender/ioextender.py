@@ -23,8 +23,9 @@ class IoExtender:
 
     def __init__(self, bus, address):
 
-        self.bus     = bus
-        self.address = address
+        self.bus           = bus
+        self.address       = address
+        self.is_quiet_mode = False
 
         self.i2c_device = i2c.I2cDevice(bus, address)
 
@@ -46,6 +47,8 @@ class IoExtender:
         self.port_a_values = 0x00
         self.port_b_values = 0x00
 
+        self.leave_quiet_mode()
+
         return
 
     @staticmethod
@@ -55,6 +58,22 @@ class IoExtender:
             return bitmap & ~(1 << bit)
         else:
             return bitmap | (1 << bit)
+
+    def leave_quiet_mode(self):
+
+        log(INFO, 'IO extender @{}:{} leaving quiet mode'.format(self.bus, self.address))
+
+        self.is_quiet_mode = False
+
+        return
+
+    def enter_quiet_mode(self):
+
+        log(INFO, 'IO extender @{}:{} entering quiet mode'.format(self.bus, self.address))
+
+        self.is_quiet_mode = True
+
+        return
 
     def write_io(self, pin, value):
 
@@ -68,13 +87,15 @@ class IoExtender:
         if pin < 8:
 
             new_values = self.__change_bit__(self.port_a_values, pin, value)
-            self.i2c_device.write_byte(IoExtender.MCP_23017_OLATA, new_values)
+            if not self.is_quiet_mode:
+                self.i2c_device.write_byte(IoExtender.MCP_23017_OLATA, new_values)
             self.port_a_values = new_values
 
         else:
 
             new_values = self.__change_bit__(self.port_b_values, pin - 8, value)
-            self.i2c_device.write_byte(IoExtender.MCP_23017_OLATB, new_values)
+            if not self.is_quiet_mode:
+                self.i2c_device.write_byte(IoExtender.MCP_23017_OLATB, new_values)
             self.port_b_values = new_values
 
         return
@@ -105,12 +126,14 @@ class IoExtender:
 
         if port_a_values != self.port_a_values:
 
-            self.i2c_device.write_byte(IoExtender.MCP_23017_OLATA, port_a_values)
+            if not self.is_quiet_mode:
+                self.i2c_device.write_byte(IoExtender.MCP_23017_OLATA, port_a_values)
             self.port_a_values = port_a_values
 
         if port_b_values != self.port_b_values:
 
-            self.i2c_device.write_byte(IoExtender.MCP_23017_OLATB, port_b_values)
+            if not self.is_quiet_mode:
+                self.i2c_device.write_byte(IoExtender.MCP_23017_OLATB, port_b_values)
             self.port_b_values = port_b_values
 
         return

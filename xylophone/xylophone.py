@@ -119,3 +119,23 @@ class Xylophone:
             self.io_extender_high.write_ios(high_notes_0)
 
         return
+
+    @staticmethod
+    def pause(pause_duration):
+
+        log(DEBUG, 'Xylophone pausing for: {} s'.format(pause_duration))
+
+        # Input file format, out of our tool midif_files_filter.py, is such as notes event
+        # and pause events are systematically stored one after another (we never get notes
+        # after notes of pause after pause). As notes events executes with a fixed duration,
+        # we have to remove that duration, - as that already elapsed, - to the upcoming pause.
+        actual_pause_duration = pause_duration - control.note_length
+
+        # This should not occur that much, - as note length is very short, - but just in case
+        # pause duration gets negative, it's not time to sleep: let's go straight to next notes!
+        if actual_pause_duration <= 0:
+            log(WARNING, 'Got a very short pause ({}): bypassing sleep'.format(pause_duration))
+        else:
+            time.sleep(actual_pause_duration)
+
+        return

@@ -68,23 +68,19 @@ class MidiReader:
 
         if not 0 <= index < self.files_count:
 
-            log(ERROR, 'Cannot get MIDI file info; out of range index: {}'.format(index))
-            return None
+            log(ERROR, 'Cannot get MIDI file info; out of range index: {}; using 1st file instead'.format(index))
+            index = 0
 
-        else:
-
-            return self.files[index]['name'], self.files[index]['tempo'], self.files[index]['length']
+        return self.files[index]['name'], self.files[index]['tempo'], self.files[index]['length']
 
     def get_file_tempo(self, index):
 
         if not 0 <= index < self.files_count:
 
-            log(ERROR, 'Cannot get MIDI file tempo; out of range index: {}'.format(index))
-            return None
+            log(ERROR, 'Cannot get MIDI file tempo; out of range index: {}; using 1st file instead'.format(index))
+            index = 0
 
-        else:
-
-            return self.files[index]['tempo']
+        return self.files[index]['tempo']
 
     def start_playing_file(self, index):
 
@@ -177,7 +173,7 @@ class MidiReader:
         for file in self.files:
 
             length_string = turn_seconds_int_to_minutes_and_seconds_string(file['length'])
-            print('#{}: {} - {} - {}'.format(index, file['name'], length_string , file['tempo']))
+            print('#{:2d} / {} / {:3d} : {}'.format(index, length_string , file['tempo'], file['name']))
             index += 1
 
         return

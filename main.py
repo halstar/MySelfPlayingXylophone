@@ -24,23 +24,29 @@ lcd_screen       = None
 def print_help():
 
     print('')
+    print('Print controller  status         : e')
     print('Print MIDI reader status         : m')
     print('Print MIDI file info    by index : i=2')
     print('Print MIDI file details by index : d=3')
     print('')
-    print('Play welcome sound             : w')
-    print('Play a single note             : n=60')
-    print('Play chord, i.e. several notes : c=[60, 62]')
-    print('Change file playing tempo      : t=90')
-    print('Start playing file by index    : p=2')
-    print('Stop  playing file (interrupt) : s')
+    print('Play welcome sound              : w')
+    print('Play a single note              : n=60')
+    print('Play a chord, i.e. several notes: c=[60, 62]')
+    print('')
+    print('Change file playing tempo            : t=90')
+    print('Start playing file, use file tempo   : o=2')
+    print('Start playing file, use playing tempo: p=3')
+    print('Stop  playing file (interrupt)       : s')
+    print('')
+    print('Enter quiet mode (don\'t trigger notes): q')
+    print('Enter full  mode (trigger notes)      : f')
     print('')
     print('Change note length, in ms : g=20 (current: {})'.format(int(control.note_length * 1000)))
     print('')
     print('Set log level: l=0 > NO_LOG , 1 > ERROR,')
     print('                 2 > WARNING, 3 > INFO , 4 > DEBUG')
     print('')
-    print('Press q to go for operational mode')
+    print('Press r to go for operational mode')
     print('Press x to exit with no error')
     print('Press h to display this help')
     print('')
@@ -48,7 +54,7 @@ def print_help():
     return
 
 
-def console_thread(midi_reader, main_controller):
+def console_thread(midi_reader, main_controller, io_extender_low, io_extender_high):
 
     print_help()
 
@@ -64,13 +70,21 @@ def console_thread(midi_reader, main_controller):
 
             command = user_input[0]
 
-            if command == 'm':
+            if command == 'e':
+                main_controller.print_status()
+            elif command == 'm':
                 midi_reader.print_status()
             elif command == 's':
                 main_controller.stop_track()
             elif command == 'w':
                 main_controller.play_welcome_sound()
+            elif command == 'f':
+                io_extender_low.leave_quiet_mode ()
+                io_extender_high.leave_quiet_mode()
             elif command == 'q':
+                io_extender_low.enter_quiet_mode ()
+                io_extender_high.enter_quiet_mode()
+            elif command == 'r':
                 print('')
                 print('***** GOING TO OPERATIONAL MODE *****')
                 is_console_on = False
@@ -120,8 +134,10 @@ def console_thread(midi_reader, main_controller):
                 main_controller.play_notes_from_console(value)
             elif command == 't':
                 main_controller.set_tempo_from_console(value)
+            elif command == 'o':
+                main_controller.play_track_from_console(value, True)
             elif command == 'p':
-                main_controller.play_track_from_console(value)
+                main_controller.play_track_from_console(value, False)
             elif command == 'g':
                 control.note_length = float(value) / 1000.0
                 print('Changing note length to {} ms'.format(int(value)))
@@ -213,7 +229,6 @@ def main():
 
     # Setup actual xylophone and highest level controllers
     xylophone_device  = xylophone.Xylophone  (setup_data['XYLOPHONE_LOWEST_NOTE'], setup_data['XYLOPHONE_NOTES_COUNT'], setup_data['XYLOPHONE_MAX_SIM_NOTES'], io_extender_low, io_extender_high)
-    # xylophone_device = xylophone.Xylophone(setup_data['XYLOPHONE_LOWEST_NOTE'], setup_data['XYLOPHONE_NOTES_COUNT'], setup_data['XYLOPHONE_MAX_SIM_NOTES'], None, None)
     main_controller   = controller.Controller(mode_button, track_button, tempo_button, midi_reader, xylophone_device, display_interface)
 
     controller_buttons_reader = threading.Thread(target = main_controller.buttons_reader_thread, name='controller_buttons_reader', args = [])
@@ -233,7 +248,7 @@ def main():
     log(INFO, 'Main >>>>>> starting console')
 
     if setup_data['START_CONSOLE'] == 1:
-        console = threading.Thread(target = console_thread, name = 'console', args = [midi_reader, main_controller])
+        console = threading.Thread(target = console_thread, name = 'console', args = [midi_reader, main_controller, io_extender_low, io_extender_high])
         console.start()
 
     controller_buttons_reader.join()
