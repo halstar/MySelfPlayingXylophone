@@ -24,6 +24,7 @@ lcd_screen       = None
 def print_help():
 
     print('')
+    print('Print tempo list values          : v')
     print('Print controller  status         : e')
     print('Print MIDI reader status         : m')
     print('Print MIDI file info    by index : i=2')
@@ -41,7 +42,7 @@ def print_help():
     print('Enter quiet mode (don\'t trigger notes): q')
     print('Enter full  mode (trigger notes)      : f')
     print('')
-    print('Change note length, in ms : g=20 (current: {})'.format(int(control.note_length * 1000)))
+    print('Change note length, in ms : g=15 (current: {})'.format(int(control.note_length * 1000)))
     print('')
     print('Set log level: l=0 > NO_LOG , 1 > ERROR,')
     print('                 2 > WARNING, 3 > INFO , 4 > DEBUG')
@@ -70,7 +71,11 @@ def console_thread(midi_reader, main_controller, io_extender_low, io_extender_hi
 
             command = user_input[0]
 
-            if command == 'e':
+            if command == 'v':
+                for tempo in TEMPO_LIST:
+                    print('{} '.format(tempo), end = '', flush = True)
+                print('')
+            elif command == 'e':
                 main_controller.print_status()
             elif command == 'm':
                 midi_reader.print_status()

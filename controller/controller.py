@@ -12,12 +12,15 @@ class Controller:
     STATE_STOPPING_TRACK = 2
 
     WELCOME_SOUND = [
-        {'type': IS_NOTES, 'value': [53]},
-        {'type': IS_PAUSE, 'value': 0.3 },
-        {'type': IS_NOTES, 'value': [54]},
-        {'type': IS_PAUSE, 'value': 0.3 },
         {'type': IS_NOTES, 'value': [55]},
-        {'type': IS_PAUSE, 'value': 0.3 }
+        {'type': IS_PAUSE, 'value': 0.3 },
+        {'type': IS_NOTES, 'value': [62]},
+        {'type': IS_PAUSE, 'value': 0.35 },
+        {'type': IS_NOTES, 'value': [67]},
+        {'type': IS_PAUSE, 'value': 0.4 },
+        {'type': IS_NOTES, 'value': [74]},
+        {'type': IS_PAUSE, 'value': 0.5},
+        {'type': IS_NOTES, 'value': [67, 71, 74, 79, 83]},
     ]
 
     WELCOME_SOUND_TEMPO = 60

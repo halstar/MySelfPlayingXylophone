@@ -51,7 +51,7 @@ class MidiReader:
                     file_data['events'     ]  = events
                     file_data['events_count'] = len(events)
 
-                    log(DEBUG, 'Registered file #{}: {}'.format(self.files_count, filename))
+                    log(INFO, 'Registered file #{}: {}'.format(self.files_count, filename))
 
                     self.files.append(file_data)
                     self.files_count += 1

@@ -1,6 +1,6 @@
 {
     "START_CONSOLE"           : 1,
-    "LOG_LEVEL"               : 4,
+    "LOG_LEVEL"               : 3,
     "MIDI_MUSIC_DIR"          : "MUSIC",
 
     "I2C_BUS_NUMBER"          :  1,
@@ -11,6 +11,6 @@
 
     "XYLOPHONE_LOWEST_NOTE"   : 53,
     "XYLOPHONE_NOTES_COUNT"   : 32,
-    "XYLOPHONE_NOTE_LENGTH"   : 15,
+    "XYLOPHONE_NOTE_LENGTH"   : 20,
     "XYLOPHONE_MAX_SIM_NOTES" :  8
 }

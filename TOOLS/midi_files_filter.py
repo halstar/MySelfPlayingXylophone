@@ -567,10 +567,8 @@ def analyze_file(input_midi_data, input_filename, criteria, output_midi_data):
         # octave, so that the transposition will actually sound much closer to the original.
         if align_lowest_note_offset + transpose_range <= criteria['num_notes']:
 
-            print("Before fix ", lowest_note, highest_note, transpose_offset, align_lowest_note_offset)
             transpose_offset += align_lowest_note_offset
             log(INFO, "Could apply octave    correction on transpose offset, now: {}".format(transpose_offset))
-            print("After fix  ", transpose_offset, lowest_note + transpose_offset,  highest_note + transpose_offset,)
 
         # If transpose offset is odd (i.e. a half-tone) and we got room to make it even (i.e. full tone),
         # let's go for an even offset, by adding 1 half-tone: full tone transposition should sound better.
