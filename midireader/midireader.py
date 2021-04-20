@@ -19,9 +19,9 @@ class MidiReader:
 
         log(INFO, 'Scanning {} directory for MIDI files'.format(music_dir))
 
-        for dirname, dirnames, filenames in os.walk(music_dir):
+        for dirname, dirnames, filenames in sorted(os.walk(music_dir)):
 
-            for filename in filenames:
+            for filename in sorted(filenames):
 
                 fullname = os.path.join(dirname, filename)
                 data     = MidiFile(fullname, clip = True)

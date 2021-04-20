@@ -47,7 +47,8 @@ class IoExtender:
         self.port_a_values = 0x00
         self.port_b_values = 0x00
 
-        self.leave_quiet_mode()
+        # self.leave_quiet_mode()
+        self.enter_quiet_mode()
 
         return
 

@@ -584,8 +584,6 @@ class Display:
 
         if self.is_refresh_needed == True:
 
-            log(INFO, 'Display refresh')
-
             self.lcd_screen.display(self.image)
 
             self.is_refresh_needed = False

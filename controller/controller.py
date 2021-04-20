@@ -142,7 +142,7 @@ class Controller:
         self.mode_button.set_state(self.mode)
 
         # Sleep a bit to make sure that buttons reader thread had time to update
-        time.sleep(MAIN_LOOP_SLEEP_TIME)
+        time.sleep(BUTTONS_READER_THREAD_SLEEP_TIME * 2)
 
         self.play_track()
 
@@ -162,7 +162,7 @@ class Controller:
         self.tempo_button.set_state(tempo)
 
         # Sleep a bit to make sure that buttons reader thread had time to update
-        time.sleep(MAIN_LOOP_SLEEP_TIME)
+        time.sleep(BUTTONS_READER_THREAD_SLEEP_TIME * 2)
 
         return
 
@@ -240,7 +240,7 @@ class Controller:
             # Now actually refresh display with all possible previous updates
             self.display.refresh()
 
-            time.sleep(MAIN_LOOP_SLEEP_TIME)
+            time.sleep(BUTTONS_READER_THREAD_SLEEP_TIME)
 
     def file_player_thread(self):
 
@@ -248,7 +248,7 @@ class Controller:
 
             if self.state == self.STATE_IDLE:
 
-                time.sleep(MAIN_LOOP_SLEEP_TIME)
+                time.sleep(FILE_PLAYER_THREAD_SLEEP_TIME)
 
             elif self.state == self.STATE_PLAYING_TRACK:
 

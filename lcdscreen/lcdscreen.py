@@ -1,5 +1,7 @@
 import time
 import RPi.GPIO
+import gpiozero
+import pigpio
 import spi
 import numpy
 
@@ -13,23 +15,44 @@ class LcdScreen:
 
     SPI_MAX_SPEED_IN_HZ = 40000000
 
-    def __init__(self, bus, address):
+    def __init__(self, gpio_interface, bus, address):
 
         log(INFO, 'Setting up LCD screen class')
 
-        self.spi_device    = spi.SpiDevice(bus, address, self.SPI_MAX_SPEED_IN_HZ)
-        self.backlight_pwm = None
+        self.gpio_interface = gpio_interface
+        self.spi_device     = spi.SpiDevice(bus, address, self.SPI_MAX_SPEED_IN_HZ)
 
         return
+
+    def __output_gpio__(self, gpio, value):
+
+        if self.gpio_interface == USE_RPI_GPIO:
+
+            RPi.GPIO.output(gpio, value)
+
+        elif self.gpio_interface == USE_RPI_ZERO:
+
+            if gpio == LCD_SCREEN_RESET_PIN:
+                self.pin_reset.value = value
+            elif gpio == LCD_SCREEN_DC_PIN:
+                self.pin_dc.value = value
+            elif gpio == LCD_SCREEN_CS_PIN:
+                self.pin_cs.value = value
+            elif gpio == LCD_SCREEN_BL_PIN:
+                self.pin_bl.value = value
+
+        elif self.gpio_interface == USE_PI_GPIO:
+
+            self.pigpio.write(gpio, value)
 
     def __send_command__(self, command):
 
         log(DEBUG, "Sending command: 0x{:02X}".format(command))
 
-        RPi.GPIO.output(LCD_SCREEN_DC_PIN, 0 )
-        RPi.GPIO.output(LCD_SCREEN_CS_PIN, 0 )
-        self.spi_device.write_bytes([command])
-        RPi.GPIO.output(LCD_SCREEN_CS_PIN, 1 )
+        self.__output_gpio__(LCD_SCREEN_DC_PIN, 0)
+        self.__output_gpio__(LCD_SCREEN_CS_PIN, 0)
+        self.spi_device.write_bytes([command]    )
+        self.__output_gpio__(LCD_SCREEN_CS_PIN, 1)
 
         return
 
@@ -37,19 +60,19 @@ class LcdScreen:
 
         # No log while sending data or console would be flooded
 
-        RPi.GPIO.output(LCD_SCREEN_DC_PIN, 1 )
-        RPi.GPIO.output(LCD_SCREEN_CS_PIN, 0 )
-        self.spi_device.write_bytes(data_list)
-        RPi.GPIO.output(LCD_SCREEN_CS_PIN, 1 )
+        self.__output_gpio__(LCD_SCREEN_DC_PIN, 1)
+        self.__output_gpio__(LCD_SCREEN_CS_PIN, 0)
+        self.spi_device.write_bytes(data_list    )
+        self.__output_gpio__(LCD_SCREEN_CS_PIN, 1)
 
     def __send_data__(self, data):
 
         # No log while sending data or console would be flooded
 
-        RPi.GPIO.output(LCD_SCREEN_DC_PIN, 1)
-        RPi.GPIO.output(LCD_SCREEN_CS_PIN, 0)
-        self.spi_device.write_bytes([data]  )
-        RPi.GPIO.output(LCD_SCREEN_CS_PIN, 1)
+        self.__output_gpio__(LCD_SCREEN_DC_PIN, 1)
+        self.__output_gpio__(LCD_SCREEN_CS_PIN, 0)
+        self.spi_device.write_bytes([data]       )
+        self.__output_gpio__(LCD_SCREEN_CS_PIN, 1)
 
         return
 
@@ -130,23 +153,40 @@ class LcdScreen:
 
         log(INFO, 'Resetting LCD screen module')
 
-        RPi.GPIO.setmode(RPi.GPIO.BCM)
-        RPi.GPIO.setwarnings(False)
-        RPi.GPIO.setup(LCD_SCREEN_RESET_PIN, RPi.GPIO.OUT)
-        RPi.GPIO.setup(LCD_SCREEN_DC_PIN   , RPi.GPIO.OUT)
-        RPi.GPIO.setup(LCD_SCREEN_CS_PIN   , RPi.GPIO.OUT)
-        RPi.GPIO.setup(LCD_SCREEN_BL_PIN   , RPi.GPIO.OUT)
+        if self.gpio_interface == USE_RPI_GPIO:
+
+            RPi.GPIO.setmode(RPi.GPIO.BCM)
+            RPi.GPIO.setwarnings(False)
+            RPi.GPIO.setup(LCD_SCREEN_RESET_PIN, RPi.GPIO.OUT)
+            RPi.GPIO.setup(LCD_SCREEN_DC_PIN   , RPi.GPIO.OUT)
+            RPi.GPIO.setup(LCD_SCREEN_CS_PIN   , RPi.GPIO.OUT)
+            RPi.GPIO.setup(LCD_SCREEN_BL_PIN   , RPi.GPIO.OUT)
+
+        elif self.gpio_interface == USE_RPI_ZERO:
+
+            self.pin_reset = gpiozero.DigitalOutputDevice(LCD_SCREEN_RESET_PIN)
+            self.pin_dc    = gpiozero.DigitalOutputDevice(LCD_SCREEN_DC_PIN   )
+            self.pin_cs    = gpiozero.DigitalOutputDevice(LCD_SCREEN_CS_PIN   )
+            self.pin_bl    = gpiozero.DigitalOutputDevice(LCD_SCREEN_BL_PIN   )
+
+        elif self.gpio_interface == USE_PI_GPIO:
+
+            self.pigpio = pigpio.pi()
+
+            self.pigpio.set_mode(LCD_SCREEN_RESET_PIN, pigpio.OUTPUT)
+            self.pigpio.set_mode(LCD_SCREEN_DC_PIN   , pigpio.OUTPUT)
+            self.pigpio.set_mode(LCD_SCREEN_CS_PIN   , pigpio.OUTPUT)
+            self.pigpio.set_mode(LCD_SCREEN_BL_PIN   , pigpio.OUTPUT)
 
         # Turn backlight 100% ON by deftault
-        self.backlight_pwm = RPi.GPIO.PWM(LCD_SCREEN_BL_PIN, 1000)
-        self.backlight_pwm.start(100)
+        self.__output_gpio__(LCD_SCREEN_BL_PIN, 1)
 
         # Hardware reset
-        RPi.GPIO.output(LCD_SCREEN_RESET_PIN, 1)
+        self.__output_gpio__(LCD_SCREEN_RESET_PIN, 1)
         time.sleep(10 / 1000.0)
-        RPi.GPIO.output(LCD_SCREEN_RESET_PIN, 0)
+        self.__output_gpio__(LCD_SCREEN_RESET_PIN, 0)
         time.sleep(10 / 1000.0)
-        RPi.GPIO.output(LCD_SCREEN_RESET_PIN, 1)
+        self.__output_gpio__(LCD_SCREEN_RESET_PIN, 1)
         time.sleep(10 / 1000.0)
 
         # Take device out of sleep
@@ -261,12 +301,9 @@ class LcdScreen:
         log(INFO, 'Shutting down LCD screen')
 
         self.spi_device.close()
-        self.backlight_pwm.stop()
 
-        RPi.GPIO.output(LCD_SCREEN_RESET_PIN, 0)
-        RPi.GPIO.output(LCD_SCREEN_DC_PIN   , 0)
-        RPi.GPIO.output(LCD_SCREEN_BL_PIN   , 0)
-
-        RPi.GPIO.cleanup()
+        self.__output_gpio__(LCD_SCREEN_RESET_PIN, 0)
+        self.__output_gpio__(LCD_SCREEN_DC_PIN   , 0)
+        self.__output_gpio__(LCD_SCREEN_BL_PIN   , 0)
 
         return

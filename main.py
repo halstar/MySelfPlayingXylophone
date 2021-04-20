@@ -190,10 +190,17 @@ def main():
 
     print('')
 
+    # Check if required PI GPIO daemon is started
+    if (control.gpio_interface == USE_PI_GPIO) and (not utils.is_process_running('pigpiod')):
+
+        log(ERROR, 'pigpiod process not started')
+        graceful_exit(3)
+
+
     log(INFO, 'Main >>>>>> setting up display')
     log(INFO, '')
 
-    lcd_screen        = lcdscreen.LcdScreen(setup_data['SPI_BUS_NUMBER'], setup_data['LCD_SPI_ADDRESS'])
+    lcd_screen        = lcdscreen.LcdScreen(control.gpio_interface, setup_data['SPI_BUS_NUMBER'], setup_data['LCD_SPI_ADDRESS'])
     display_interface = display.Display(lcd_screen)
     display_interface.draw_init()
 
@@ -211,12 +218,6 @@ def main():
     log(INFO, '')
     log(INFO, 'Main >>>>>> initiating other HW parts')
     log(INFO, '')
-
-    # Check if required PI GPIO daemon is started
-    if (control.gpio_interface == USE_PI_GPIO) and (not utils.is_process_running('pigpiod')):
-
-        log(ERROR, 'pigpiod process not started')
-        graceful_exit(3)
 
     # Setup control buttons
     mode_button      = rotarybutton.RotaryStatesButton('MODE' , control.gpio_interface, MODE_BUTTON_PIN_1 , MODE_BUTTON_PIN_2 , MODE_BUTTON_PIN_PRESS , [MODE.LOOP_ONE_TRACK, MODE.PLAY_ALL_TRACKS, MODE.PLAY_ONE_TRACK, MODE.STOP], True)
