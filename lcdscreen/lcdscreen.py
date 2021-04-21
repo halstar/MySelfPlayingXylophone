@@ -1,3 +1,4 @@
+import threading
 import time
 import RPi.GPIO
 import gpiozero
@@ -19,8 +20,9 @@ class LcdScreen:
 
         log(INFO, 'Setting up LCD screen class')
 
-        self.gpio_interface = gpio_interface
-        self.spi_device     = spi.SpiDevice(bus, address, self.SPI_MAX_SPEED_IN_HZ)
+        self.gpio_interface      = gpio_interface
+        self.spi_device          = spi.SpiDevice(bus, address, self.SPI_MAX_SPEED_IN_HZ)
+        self.is_init_in_progress = False
 
         return
 
@@ -100,7 +102,7 @@ class LcdScreen:
 
     def display(self, image):
 
-        log(INFO, 'Display image on LCD')
+        log(DEBUG, 'Display image on LCD')
 
         image_width, image_height = image.size
         
@@ -178,7 +180,7 @@ class LcdScreen:
             self.pigpio.set_mode(LCD_SCREEN_CS_PIN   , pigpio.OUTPUT)
             self.pigpio.set_mode(LCD_SCREEN_BL_PIN   , pigpio.OUTPUT)
 
-        # Turn backlight 100% ON by deftault
+        # Turn backlight 100% OFF by default
         self.__output_gpio__(LCD_SCREEN_BL_PIN, 1)
 
         # Hardware reset
@@ -289,10 +291,60 @@ class LcdScreen:
         self.__send_data__   (0x0F)
         # Display ON
         self.__send_command__(0x29)
-        
-        # Clear screen with a blank image
-        image = Image.new("RGB", (LCD_SCREEN_HEIGHT, LCD_SCREEN_WIDTH), "WHITE")
-        self.display(image)
+
+        return
+
+    def __init_animation_thread__(self):
+
+        counter = 0
+
+        image_file_1 = Image.open('display/init_1.png')
+        image_file_2 = Image.open('display/init_2.png')
+        image_file_3 = Image.open('display/init_3.png')
+        image_file_4 = Image.open('display/init_4.png')
+        image_file_5 = Image.open('display/init_5.png')
+        image_file_6 = Image.open('display/init_6.png')
+        image_file_7 = Image.open('display/init_7.png')
+
+        while self.is_init_in_progress == True:
+
+            if counter % 7 == 0:
+                self.display(image_file_1)
+            elif counter % 7 == 1:
+                self.display(image_file_2)
+            elif counter % 7 == 2:
+                self.display(image_file_3)
+            elif counter % 7 == 3:
+                self.display(image_file_4)
+            elif counter % 7 == 4:
+                self.display(image_file_5)
+            elif counter % 7 == 5:
+                self.display(image_file_6)
+            elif counter % 7 == 6:
+                self.display(image_file_7)
+
+            counter += 1
+
+            time.sleep(3)
+
+        return
+
+    def start_init_animation(self):
+
+        log(INFO, 'LCD screen starting initialization animation thread')
+
+        self.is_init_in_progress = True
+
+        init_thread = threading.Thread(target = self.__init_animation_thread__, name = 'init_animation', args = [])
+        init_thread.start()
+
+        return
+
+    def stop_init_animation(self):
+
+        log(INFO, 'LCD screen stopping initialization animation thread')
+
+        self.is_init_in_progress = False
 
         return
 

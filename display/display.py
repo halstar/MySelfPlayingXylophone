@@ -596,15 +596,15 @@ class Display:
 
         self.lcd_screen.module_init()
 
-        self.image = Image.open(self.INIT_IMAGE)
-
-        self.lcd_screen.display(self.image)
+        self.lcd_screen.start_init_animation()
 
         return
 
     def draw_oper(self):
 
         log(INFO, 'Display going operational')
+
+        self.lcd_screen.stop_init_animation()
 
         # Initiate image and texts
         self.image  = Image.new("RGB", (LCD_SCREEN_HEIGHT, LCD_SCREEN_WIDTH), self.BACKGROUND_COLOR)

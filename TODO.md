@@ -1,5 +1,4 @@
 => Try adjusting note length/velocity on higher notes, to make them sound less loud?
-=> Finalize welcome screen
 
 What could be done next?...
 

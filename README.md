@@ -50,8 +50,8 @@ https://www.youtube.com/...
 
     * sudo systemctl disable hciuart.service
     * sudo systemctl disable bluetooth.service
-	* sudo vi /boot/config.txt
-    *    dtoverlay=disable-bt (add this line at the very bottom of the file)
+	* sudo vi /boot/config.txt (add the following line at the very bottom of the file)
+    *    dtoverlay=disable-bt 
     * sudo reboot
 
 * In case it's not already installed, install SPI library for Python:
@@ -66,12 +66,18 @@ https://www.youtube.com/...
  
     * sudo pip3 install numpy
 
-* Install MidiFile library for Python:
+* Install mido MIDI library for Python:
 
-    * sudo pip3 install MIDIFile
+    * sudo pip3 install mido
 
 * Manually start PIGPIO daemon (add this to rc.local or .bashrc or other):
 
 	* sudo pigpiod
-
+	
 **Note**:  so, pigpio is used for GPIO access. Though they are available/activable in this project, RPi.GPIO & gpiozero supports were only partially tested.
+
+* Add xylophone's main script to the Raspberry Pi startup sequence:
+
+    * sudo vim /etc/rc.local (add the following line before last command "exit 0")
+    *   cd /home/pi/xylo
+    *   sudo ./main.sh 2>&1 > /dev/null &
