@@ -37,6 +37,7 @@ def print_help():
     print('Change file playing tempo            : t=90')
     print('Start playing file, use file tempo   : o=2')
     print('Start playing file, use playing tempo: p=3')
+    print('Start playing all files in a row     : a')
     print('Stop  playing file (interrupt)       : s')
     print('')
     print('Enter quiet mode (don\'t trigger notes): q')
@@ -81,6 +82,8 @@ def console_thread(midi_reader, main_controller, io_extender_low, io_extender_hi
                 midi_reader.print_status()
             elif command == 's':
                 main_controller.stop_track()
+            elif command == 'a':
+                main_controller.play_all_from_console()
             elif command == 'w':
                 main_controller.play_welcome_sound()
             elif command == 'f':

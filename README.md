@@ -1,12 +1,12 @@
 # MySelfPlayingXylophone
 
-A homemade ... built on a Raspberry Pi 3 B+ basis, with ...
+A homemade self-playing xylophone (actually a glockenspiel) built on a Raspberry Pi 0 WH basis.
 
 This repository gathers sources Python scripts to be executed on the Raspberry Pi.
 
-You can see the result at work with this video:
+You can see the result at work with this playlist:
 
-https://www.youtube.com/...
+https://www.youtube.com/playlist?list=PLDA98d1k4czCSmF_95BBX-sHuxQW8t7GG
 
 **How to setup the Raspberry Pi for this project**
 
@@ -46,7 +46,7 @@ https://www.youtube.com/...
 	*    dtparam=i2c_arm=on,i2c_arm_baudrate=400000 (modify the original line, that was 'dtparam=i2c_arm=on')  
 	* sudo reboot
 
-* Disable bluetooth:
+* Disable bluetooth (not needed):
 
     * sudo systemctl disable hciuart.service
     * sudo systemctl disable bluetooth.service
@@ -78,6 +78,6 @@ https://www.youtube.com/...
 
 * Add xylophone's main script to the Raspberry Pi startup sequence:
 
-    * sudo vim /etc/rc.local (add the following line before last command "exit 0")
+    * sudo vim /etc/rc.local (add the following lines before final "exit 0" command)
     *   cd /home/pi/xylo
     *   sudo ./main.sh 2>&1 > /dev/null &

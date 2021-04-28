@@ -1,6 +1,4 @@
-=> Try adjusting note length/velocity on higher notes, to make them sound less loud?
-
-What could be done next?...
+What could be done next, maybe in a V2?...
 
 * Add some code comments,
 * Isolate console in its own module,

@@ -180,7 +180,7 @@ class LcdScreen:
             self.pigpio.set_mode(LCD_SCREEN_CS_PIN   , pigpio.OUTPUT)
             self.pigpio.set_mode(LCD_SCREEN_BL_PIN   , pigpio.OUTPUT)
 
-        # Turn backlight 100% OFF by default
+        # Turn backlight ON by default
         self.__output_gpio__(LCD_SCREEN_BL_PIN, 1)
 
         # Hardware reset

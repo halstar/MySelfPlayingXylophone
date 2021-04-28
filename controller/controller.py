@@ -84,6 +84,25 @@ class Controller:
 
         return
 
+    def play_all_from_console(self):
+
+        # Select 1st track
+        self.track_index = 0
+
+        # Force tempo change to play that file at its default pace
+        self.__set_track_tempo__(self.midi_reader.get_file_tempo(0))
+        self.__set_play_tempo__ (self.track_tempo)
+        self.__set_tempo_ratio__()
+
+        # Force mode change
+        self.mode = MODE.PLAY_ALL_TRACKS
+        self.mode_button.set_state(self.mode)
+
+        # Sleep a bit to make sure that buttons reader thread had time to update
+        time.sleep(BUTTONS_READER_THREAD_SLEEP_TIME * 2)
+
+        self.play_track()
+
     def play_welcome_sound(self):
 
         log(INFO, 'Playing welcome sound')
@@ -275,25 +294,31 @@ class Controller:
 
                     # Keep current track index and controller state unchanged
                     # so that we will just restart and play the same file.
-                    # Just sleep a bit in between track repetitions...
+                    log(INFO, 'Sleeping between tracks')
                     time.sleep(INTER_TRACKS_SLEEP)
 
                 elif self.mode == MODE.PLAY_ALL_TRACKS:
 
-                    # Increment current track index and keep controller state unchanged
-                    # so that we will start and play next file; stop at the end of the list
+                    # Increment current track index and keep controller state unchanged so that
+                    # we will start and play next file; go to idel at the end of the list
                     if self.track_index + 1  == self.tracks_count:
 
-                        self.state = self.STATE_STOPPING_TRACK
+                        self.state = self.STATE_IDLE
 
                     else:
 
+                        # Get ready to start next track
                         self.track_index += 1
+
+                        # Force tempo change to play that file at its default pace
+                        self.__set_track_tempo__(self.midi_reader.get_file_tempo(self.track_index))
+                        self.__set_play_tempo__ (self.track_tempo)
+                        self.__set_tempo_ratio__()
 
                         # Force track change to show up
                         self.track_button.set_state(self.track_index)
 
-                        # Sleep a bit in between tracks...
+                        log(INFO, 'Sleeping between tracks')
                         time.sleep(INTER_TRACKS_SLEEP)
 
                 else:
