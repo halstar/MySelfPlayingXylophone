@@ -1,6 +1,6 @@
 # MySelfPlayingXylophone
 
-A homemade self-playing xylophone (actually a glockenspiel) built on a Raspberry Pi 0 WH basis.
+A homemade self-playing xylophone (actually a glockenspiel) built on a Raspberry Pi 0 WH basis, capable of playing any provided input MIDI files, with an LCD color screen and 3 rotary/click buttons, for interactions (e.g. select file).
 
 This repository gathers sources Python scripts to be executed on the Raspberry Pi.
 
