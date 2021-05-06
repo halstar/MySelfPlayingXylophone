@@ -6,7 +6,7 @@ This repository gathers sources Python scripts to be executed on the Raspberry P
 
 You can see the result at work with this playlist:
 
-https://www.youtube.com/playlist?list=PLDA98d1k4czCSmF_95BBX-sHuxQW8t7GG
+https://www.youtube.com/playlist?list=PLDA98d1k4czCp31zG0Rtx2t4uluENyvoJ
 
 **How to setup the Raspberry Pi for this project**
 
