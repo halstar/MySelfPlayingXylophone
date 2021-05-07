@@ -165,7 +165,7 @@ class Encoder:
 
             elif self.gpio_interface == USE_PI_GPIO:
 
-                pin_press_state = self.pigpio.read(self.encoder_pin_press)
+                pin_press_state = not self.pigpio.read(self.encoder_pin_press)
 
             if pin_press_state == 0:
                 return False

@@ -135,7 +135,7 @@ def main():
     log(INFO, 'Type "{}" to quit test'.format(QUIT_COMMAND))
     log(INFO, '')
 
-    button = rotarybutton.RotaryButton('TEST_BUTTON', USE_RPI_ZERO, opts.input_pin_1, opts.input_pin_2, opts.input_pin_press)
+    button = rotarybutton.RotaryButton('TEST_BUTTON', USE_PI_GPIO, int(opts.input_pin_1), int(opts.input_pin_2), int(opts.input_pin_press))
 
     last_value        = 0
     last_move         = rotarybutton.RotaryButton.DID_NOT_TURN

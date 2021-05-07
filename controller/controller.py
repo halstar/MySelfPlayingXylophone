@@ -86,8 +86,8 @@ class Controller:
 
     def play_all_from_console(self):
 
-        # Select 1st track
-        self.track_index = 0
+        # Force track change to 1st track
+        self.track_button.set_state(0)
 
         # Force tempo change to play that file at its default pace
         self.__set_track_tempo__(self.midi_reader.get_file_tempo(0))
@@ -276,6 +276,9 @@ class Controller:
                 # If we could not start, we consider playing is done
                 is_done = not start_status
 
+                saved_time   = time.time()
+                elapsed_time = 0
+
                 # File reading can be interrupted by pushing MODE button to STOP
                 while (is_done == False) and (self.state != self.STATE_STOPPING_TRACK):
 
@@ -284,6 +287,15 @@ class Controller:
                     if is_done == False:
 
                         self.__play_event__(event)
+
+                        current_time = time.time()
+
+                        if current_time - saved_time > 1.0:
+
+                            saved_time    = current_time
+                            elapsed_time += 1
+
+                            log(INFO, 'Read progress: {}'.format(turn_seconds_int_to_minutes_and_seconds_string(elapsed_time)))
 
                 # Stop file reading only if we actually started reading one
                 if start_status == True:

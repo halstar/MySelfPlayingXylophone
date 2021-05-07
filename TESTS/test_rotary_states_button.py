@@ -139,7 +139,7 @@ def main():
     log(INFO, 'Type "{}" to quit test'.format(QUIT_COMMAND))
     log(INFO, '')
 
-    button = rotarybutton.RotaryStatesButton('TEST_BUTTON', USE_RPI_ZERO, opts.input_pin_1, opts.input_pin_2, opts.input_pin_press, BUTTON_TEST_STATES, BUTTON_TEST_LOOP)
+    button = rotarybutton.RotaryStatesButton('TEST_BUTTON', USE_PI_GPIO, int(opts.input_pin_1), int(opts.input_pin_2), int(opts.input_pin_press), BUTTON_TEST_STATES, BUTTON_TEST_LOOP)
 
     button.set_state(BUTTON_DEFAULT_STATE)
 
