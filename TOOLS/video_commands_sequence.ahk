@@ -5,12 +5,7 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 
 ^j::
 
-Send, l=0`n ; Disable logs 
-Sleep, 200
-Send, `n
-Sleep, 200
-
-; Send, f`n ; Enter full  mode (trigger notes)
+Send, l=0`n ; Disable logs
 Sleep, 200
 Send, `n
 Sleep, 200
@@ -113,12 +108,14 @@ Sleep, 5000
 Send, q`n ; Enter quiet mode (don't trigger notes)
 Sleep, 200
 Send, `n
-Sleep, 3000
+Sleep, 2000
 
-; Send, f`n ; Enter full  mode (trigger notes)
+Send, f`n ; Enter full  mode (trigger notes)
 Sleep, 200
 Send, `n
 Sleep, 3000
+
+Return
 
 Send, l=1`n ; Activate ERROR log level
 Sleep, 200
@@ -148,7 +145,7 @@ Sleep, 2000
 Send, h`n ; Display help reminder
 Sleep, 200
 Send, `n
-Sleep, 5000
+Sleep, 3000
 
 Send, r`n ; Press r to go for operational mode
 Sleep, 200

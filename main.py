@@ -41,7 +41,7 @@ def print_help():
     print('Stop  playing file (interrupt)       : s')
     print('')
     print('Enter quiet mode (don\'t trigger notes): q')
-    print('Enter full  mode (trigger notes)      : f')
+    print('Enter full  mode (trigger notes)       : f')
     print('')
     print('Change note length, in ms : g=15 (current: {})'.format(int(control.note_length * 1000)))
     print('')
